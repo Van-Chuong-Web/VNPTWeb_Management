@@ -510,8 +510,8 @@ window.closeAllAuthModals = function() {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setFieldError('regEmail','regEmailErr','Email không hợp lệ'); valid = false;
     }
-    if (phone && !/^(0|\+84)[0-9]{8,10}$/.test(phone.replace(/\s/g,''))) {
-      setFieldError('regPhone','regPhoneErr','Số điện thoại không hợp lệ'); valid = false;
+    if (phone && !/^(0|\+84)(3|5|7|8|9)[0-9]{8}$/.test(phone.replace(/\s/g,''))) {
+      setFieldError('regPhone','regPhoneErr','Số điện thoại không hợp lệ (10 số, bắt đầu 03,05,07,08,09)'); valid = false;
     }
     if (!password || password.length < 8) {
       setFieldError('regPassword','regPasswordErr','Mật khẩu tối thiểu 8 ký tự'); valid = false;

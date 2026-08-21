@@ -27,6 +27,12 @@ try {
         exit();
     }
 
+    if (!empty($phone) && !preg_match('/^(0|\+84)(3|5|7|8|9)[0-9]{8}$/', $phone)) {
+        http_response_code(400);
+        echo json_encode(['status' => 'error', 'message' => '⚠️ Số điện thoại không hợp lệ! Vui lòng nhập số điện thoại chuẩn Việt Nam (10 chữ số, bắt đầu bằng 03, 05, 07, 08, 09 hoặc +84).'], JSON_UNESCAPED_UNICODE);
+        exit();
+    }
+
     $action = $_GET['action'] ?? 'update';
 
     // 1. Tìm thông tin tài khoản trong MySQL (cả tai_khoan, khach_hang, nhan_vien)

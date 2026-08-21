@@ -29,6 +29,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $msg = 'Địa chỉ email không hợp lệ.';
             $msgType = 'danger';
+        } elseif ($sdt !== '' && !preg_match('/^(0|\+84)(3|5|7|8|9)[0-9]{8}$/', $sdt)) {
+            $msg = '⚠️ Số điện thoại không hợp lệ! Vui lòng nhập số điện thoại chuẩn Việt Nam (10 chữ số, bắt đầu bằng 03, 05, 07, 08, 09 hoặc +84).';
+            $msgType = 'danger';
         } else {
             // Kiểm tra trùng Email
             $stmtCheckEmail = $pdo->prepare("SELECT id FROM tai_khoan WHERE email = :email LIMIT 1");
@@ -93,6 +96,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!$id || !$hoTen || !$email) {
             $msg = 'Dữ liệu không hợp lệ.';
+            $msgType = 'danger';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $msg = 'Địa chỉ email không hợp lệ.';
+            $msgType = 'danger';
+        } elseif ($sdt !== '' && !preg_match('/^(0|\+84)(3|5|7|8|9)[0-9]{8}$/', $sdt)) {
+            $msg = '⚠️ Số điện thoại không hợp lệ! Vui lòng nhập số điện thoại chuẩn Việt Nam (10 chữ số, bắt đầu bằng 03, 05, 07, 08, 09 hoặc +84).';
             $msgType = 'danger';
         } else {
             try {
@@ -457,7 +466,8 @@ require_once __DIR__ . '/header.php';
                         <label class="form-label fw-semibold">Số điện thoại</label>
                         <input type="tel" name="so_dien_thoai" class="form-control"
                                placeholder="0901234567"
-                               pattern="[0-9]{9,11}">
+                               pattern="(0|\+84)[35789][0-9]{8}"
+                               title="Vui lòng nhập số điện thoại hợp lệ (10 chữ số, bắt đầu bằng 03, 05, 07, 08, 09 hoặc +84)">
                     </div>
                     <div>
                         <label class="form-label fw-semibold">Trạng thái</label>
@@ -505,7 +515,9 @@ require_once __DIR__ . '/header.php';
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Số điện thoại</label>
                         <input type="tel" name="so_dien_thoai" id="editSdt" class="form-control"
-                               pattern="[0-9]{9,11}">
+                               placeholder="0901234567"
+                               pattern="(0|\+84)[35789][0-9]{8}"
+                               title="Vui lòng nhập số điện thoại hợp lệ (10 chữ số, bắt đầu bằng 03, 05, 07, 08, 09 hoặc +84)">
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Mật khẩu mới</label>
