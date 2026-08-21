@@ -441,7 +441,7 @@ window.closeAllAuthModals = function() {
     const remember = !!document.getElementById('rememberMe')?.checked;
 
     try {
-      // 1) Đăng nhập trực tiếp tới CSDL MySQL qua PHP API
+      // Đăng nhập 100% thuần CSDL MySQL
       const loginUrl = (typeof window.getApiPath === 'function') ? window.getApiPath('backend/api/login.php') : 'backend/api/login.php';
       const res = await fetch(loginUrl, {
         method: 'POST',
@@ -464,51 +464,12 @@ window.closeAllAuthModals = function() {
         return;
       }
 
-      if (data && data.error) {
-        failLogin(data.error);
-        return;
-      }
+      failLogin(data?.error || 'Email hoặc mật khẩu không đúng. Vui lòng kiểm tra lại.');
+      return;
     } catch (err) {
-      console.warn('PHP Login API fallback to Node/offline:', err);
+      failLogin('Lỗi kết nối tới hệ thống cơ sở dữ liệu. Vui lòng thử lại sau.');
+      return;
     }
-
-    // 2) Fallback Node API
-    if (await backendReady()) {
-      try {
-        const { token, user } = await Api.login(email, password);
-        Api.setToken(token, remember);
-        setCurrentUser(user, remember);
-        finish();
-        updateAuthUI();
-        closeAllModals();
-        loginForm.reset();
-        showToast(`Chào mừng trở lại, ${user.firstName || user.email}! 👋`);
-        if (window.VNPTCart && typeof window.VNPTCart.fetchCart === 'function') {
-          window.VNPTCart.fetchCart();
-        }
-        return;
-      } catch (err) {
-        failLogin(err.message || 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.');
-        return;
-      }
-    }
-
-    // 3) Fallback offline
-    setTimeout(() => {
-      const users = getUsers();
-      const user  = users.find(u => u.email === email && u.password === password);
-      if (!user) { failLogin('Email hoặc mật khẩu không đúng. Vui lòng thử lại.'); return; }
-      if (user.trang_thai === 'khoa' || user.status === 'khoa' || user.is_locked) {
-        failLogin('🚫 Tài khoản của bạn đã bị khóa bởi Quản trị viên. Vui lòng liên hệ hỗ trợ!');
-        return;
-      }
-      finish();
-      setCurrentUser(user, remember);
-      updateAuthUI();
-      closeAllModals();
-      loginForm.reset();
-      showToast(`Chào mừng trở lại, ${user.firstName || user.email}! 👋`);
-    }, 500);
   });
 
   /* ---- Register form ---- */
