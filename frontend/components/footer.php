@@ -1097,8 +1097,8 @@
       <div style="display: flex; align-items: center; gap: 12px;">
         <i class="fa-solid fa-bell fs-3"></i>
         <div>
-          <h3 style="color: white; margin: 0; font-size: 1.15rem; font-weight: 800;">Thông Báo Từ VNPT</h3>
-          <p style="margin: 0; font-size: 0.82rem; opacity: 0.92;">Các thông tin cập nhật, ưu đãi và dịch vụ dành riêng cho bạn</p>
+          <h3 style="color: white; margin: 0; font-size: 1.15rem; font-weight: 800;" id="notifModalTitle">Thông Báo Từ VNPT</h3>
+          <p style="margin: 0; font-size: 0.82rem; opacity: 0.92;" id="notifModalSub">Các thông tin cập nhật, ưu đãi và dịch vụ dành riêng cho bạn</p>
         </div>
       </div>
       <button id="closeCustomerNotifModal" style="color: white; font-size: 1.6rem; background: none; border: none; cursor: pointer; opacity: 0.9;">&times;</button>

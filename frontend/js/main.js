@@ -1033,6 +1033,16 @@
         .then(res => res.json())
         .then(data => {
           if (data.status === 'success') {
+            const notifModalTitle = document.getElementById('notifModalTitle');
+            const notifModalSub = document.getElementById('notifModalSub');
+            if (data.is_staff) {
+              if (notifModalTitle) notifModalTitle.textContent = 'Thông Báo Nội Bộ VNPT';
+              if (notifModalSub) notifModalSub.textContent = 'Thông báo công việc, chỉ đạo và cập nhật hệ thống dành cho Nhân viên';
+            } else {
+              if (notifModalTitle) notifModalTitle.textContent = 'Thông Báo Từ VNPT';
+              if (notifModalSub) notifModalSub.textContent = 'Các thông tin cập nhật, ưu đãi và dịch vụ dành riêng cho bạn';
+            }
+
             const count = data.unread_count || 0;
             if (headerNotifBadge) {
               headerNotifBadge.textContent = count;
