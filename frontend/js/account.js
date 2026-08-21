@@ -89,13 +89,14 @@
       { key: 'settings', icon: 'settings', label: 'Cài đặt' },
     ];
     const avatarPath = user.hinh_anh_url || user.avatar || '';
-    const avatarSrc = avatarPath ? (avatarPath.startsWith('http') ? avatarPath : '../' + avatarPath.replace(/^\//, '')) : '';
+    const avatarSrc = avatarPath ? (avatarPath.startsWith('http') || avatarPath.startsWith('data:') ? avatarPath : avatarPath.replace(/^(\.\.\/|\/)+/, '')) : '';
 
     return `
       <div class="acct-side">
         <div class="acct-side-user">
           <div class="acct-side-avatar">
-            ${avatarSrc ? `<img src="${avatarSrc}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="Avatar">` : initialsOf(user)}
+            ${avatarSrc ? `<img src="${avatarSrc}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="Avatar" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">` : ''}
+            <span style="display:${avatarSrc ? 'none' : 'flex'}; width:100%; height:100%; border-radius:50%; background:linear-gradient(135deg,#0066CC,#00AAFF); color:white; font-weight:800; font-size:1.4rem; align-items:center; justify-content:center;">${initialsOf(user)}</span>
           </div>
           <div>
             <div class="name">${escapeHtml(fullNameOf(user))}</div>
@@ -126,7 +127,7 @@
     const ln = getLastName(user);
     const ph = getPhone(user);
     const avatarPath = user.hinh_anh_url || user.avatar || '';
-    const avatarSrc = avatarPath ? (avatarPath.startsWith('http') ? avatarPath : '../' + avatarPath.replace(/^\//, '')) : '';
+    const avatarSrc = avatarPath ? (avatarPath.startsWith('http') || avatarPath.startsWith('data:') ? avatarPath : avatarPath.replace(/^(\.\.\/|\/)+/, '')) : '';
 
     const body = `
       <div class="acct-grid">
@@ -139,7 +140,7 @@
 
             <div style="display:flex; align-items:center; gap:20px; margin-bottom:24px; padding-bottom:20px; border-bottom:1.5px solid #F1F5F9;">
               <div style="position:relative; width:90px; height:90px; border-radius:50%; overflow:hidden; border:3px solid #0066CC; box-shadow:0 4px 14px rgba(0,102,204,0.2); background:linear-gradient(135deg,#0066CC,#00AAFF); display:flex; align-items:center; justify-content:center; color:white; font-size:1.8rem; font-weight:800; flex-shrink:0;">
-                <img id="acctAvatarPreview" src="${avatarSrc}" style="width:100%; height:100%; object-fit:cover; object-position:center; border-radius:50%; aspect-ratio:1/1; display:${avatarSrc ? 'block' : 'none'};">
+                <img id="acctAvatarPreview" src="${avatarSrc}" style="width:100%; height:100%; object-fit:cover; object-position:center; border-radius:50%; aspect-ratio:1/1; display:${avatarSrc ? 'block' : 'none'};" onerror="this.style.display='none'; document.getElementById('acctAvatarInitials').style.display='block';">
                 <span id="acctAvatarInitials" style="display:${avatarSrc ? 'none' : 'block'};">${initialsOf(user)}</span>
               </div>
               <div>
@@ -284,8 +285,12 @@
         const topAvatarImg = document.getElementById('userAvatarImg');
         const topAvatarCircle = document.getElementById('userAvatarCircle');
         if (topAvatarImg && updatedAvatar) {
-          let topSrc = updatedAvatar.startsWith('http') ? updatedAvatar : '../' + updatedAvatar.replace(/^\//, '');
+          let topSrc = (updatedAvatar.startsWith('http') || updatedAvatar.startsWith('data:')) ? updatedAvatar : updatedAvatar.replace(/^(\.\.\/|\/)+/, '');
           topAvatarImg.src = topSrc + (topSrc.includes('?') ? '&' : '?') + 't=' + Date.now();
+          topAvatarImg.onerror = function() {
+            this.style.display = 'none';
+            if (topAvatarCircle) topAvatarCircle.style.display = 'inline-flex';
+          };
           topAvatarImg.style.display = 'inline-block';
           if (topAvatarCircle) topAvatarCircle.style.display = 'none';
         }

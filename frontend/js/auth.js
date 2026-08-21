@@ -294,10 +294,7 @@ window.closeAllAuthModals = function() {
       const avatarUrl = user.hinh_anh_url || user.avatar || '';
       const userAvatarImg = document.getElementById('userAvatarImg');
       if (avatarUrl && userAvatarImg) {
-        let finalSrc = avatarUrl;
-        if (!avatarUrl.startsWith('http') && !avatarUrl.startsWith('../') && !avatarUrl.startsWith('/')) {
-          finalSrc = '../' + avatarUrl;
-        }
+        let finalSrc = (avatarUrl.startsWith('http') || avatarUrl.startsWith('data:')) ? avatarUrl : avatarUrl.replace(/^(\.\.\/|\/)+/, '');
         const cacheBustSrc = finalSrc + (finalSrc.includes('?') ? '&' : '?') + 't=' + Date.now();
         userAvatarImg.src = cacheBustSrc;
         userAvatarImg.style.display = 'inline-block';

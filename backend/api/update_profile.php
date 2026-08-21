@@ -1,13 +1,17 @@
 <?php
-header('Content-Type: application/json; charset=utf-8');
-session_start();
+/**
+ * backend/api/update_profile.php — Cập nhật thông tin tài khoản & ảnh đại diện
+ */
 
-require_once __DIR__ . '/../db/database.php';
+header('Content-Type: application/json; charset=utf-8');
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+require_once __DIR__ . '/../../admin_panel/db.php';
 
 try {
-    $db = new Database();
-
-    $email = trim($_POST['email'] ?? $_GET['email'] ?? '');
+    $email = trim($_POST['email'] ?? $_GET['email'] ?? $_SESSION['user']['email'] ?? '');
     $firstName = trim($_POST['firstName'] ?? '');
     $lastName  = trim($_POST['lastName'] ?? '');
     $phone     = trim($_POST['phone'] ?? '');
@@ -15,55 +19,50 @@ try {
     $hoTen = trim($firstName . ' ' . $lastName);
 
     if (empty($email)) {
-        $email = $_SESSION['user']['email'] ?? '';
-    }
-
-    if (empty($email)) {
+        http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Vui lòng cung cấp email tài khoản!'], JSON_UNESCAPED_UNICODE);
         exit();
     }
 
     $action = $_GET['action'] ?? 'update';
 
-    if ($action === 'get') {
-        if (!empty($email)) {
-            $found = $db->select("
-                SELECT kh.id AS kh_id, kh.ho_ten, kh.so_dien_thoai, tk.id AS tk_id, tk.email, tk.hinh_anh_url
-                  FROM tai_khoan tk
-             LEFT JOIN khach_hang kh ON kh.tai_khoan_id = tk.id
-                 WHERE tk.email = ?
-                 LIMIT 1
-            ", [$email]);
+    // 1. Lấy thông tin tài khoản
+    $stmt = $pdo->prepare("
+        SELECT tk.id AS tk_id, tk.email, tk.hinh_anh_url, tk.loai_tai_khoan,
+               kh.id AS kh_id, kh.ho_ten AS kh_ho_ten, kh.so_dien_thoai AS kh_sdt,
+               nv.id AS nv_id, nv.ho_ten AS nv_ho_ten, nv.so_dien_thoai AS nv_sdt
+        FROM tai_khoan tk
+        LEFT JOIN khach_hang kh ON kh.tai_khoan_id = tk.id
+        LEFT JOIN nhan_vien nv ON nv.tai_khoan_id = tk.id
+        WHERE tk.email = :email
+        LIMIT 1
+    ");
+    $stmt->execute([':email' => $email]);
+    $userRow = $stmt->fetch();
 
-            if (!empty($found)) {
-                $row = $found[0];
-                echo json_encode([
-                    'status' => 'success',
-                    'user' => [
-                        'email' => $row['email'],
-                        'ho_ten' => $row['ho_ten'],
-                        'so_dien_thoai' => $row['so_dien_thoai'],
-                        'phone' => $row['so_dien_thoai'],
-                        'hinh_anh_url' => $row['hinh_anh_url'] ?? '',
-                        'avatar' => $row['hinh_anh_url'] ?? ''
-                    ]
-                ], JSON_UNESCAPED_UNICODE);
-                exit();
-            }
+    if ($action === 'get') {
+        if ($userRow) {
+            $displayName = !empty($userRow['kh_ho_ten']) ? $userRow['kh_ho_ten'] : (!empty($userRow['nv_ho_ten']) ? $userRow['nv_ho_ten'] : $userRow['email']);
+            $displayPhone = !empty($userRow['kh_sdt']) ? $userRow['kh_sdt'] : ($userRow['nv_sdt'] ?? '');
+
+            echo json_encode([
+                'status' => 'success',
+                'user' => [
+                    'email'        => $userRow['email'],
+                    'ho_ten'       => $displayName,
+                    'so_dien_thoai'=> $displayPhone,
+                    'phone'        => $displayPhone,
+                    'hinh_anh_url' => $userRow['hinh_anh_url'] ?? '',
+                    'avatar'       => $userRow['hinh_anh_url'] ?? ''
+                ]
+            ], JSON_UNESCAPED_UNICODE);
+            exit();
         }
     }
 
-    // Find customer by email
-    $found = $db->select("
-        SELECT kh.id AS kh_id, tk.id AS tk_id
-          FROM khach_hang kh
-     LEFT JOIN tai_khoan tk ON tk.id = kh.tai_khoan_id
-         WHERE tk.email = ?
-         LIMIT 1
-    ", [$email]);
+    // 2. Xử lý upload ảnh đại diện (nếu có tệp gửi lên)
+    $hinhAnhUrl = trim($_POST['hinh_anh_url'] ?? $_POST['avatar_url'] ?? $userRow['hinh_anh_url'] ?? '');
 
-    // Handle avatar upload if present
-    $hinhAnhUrl = trim($_POST['hinh_anh_url'] ?? $_POST['avatar_url'] ?? '');
     if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
         $file = $_FILES['avatar'];
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
@@ -81,33 +80,59 @@ try {
         }
     }
 
-    if (!empty($found)) {
-        $khId = $found[0]['kh_id'];
-        $tkId = $found[0]['tk_id'];
-        $db->execute("UPDATE khach_hang SET ho_ten = ?, so_dien_thoai = ? WHERE id = ?", [$hoTen, $phone, $khId]);
-        if (!empty($hinhAnhUrl) && $tkId) {
-            $db->execute("UPDATE tai_khoan SET hinh_anh_url = ? WHERE id = ?", [$hinhAnhUrl, $tkId]);
+    // 3. Cập nhật thông tin trong CSDL
+    if ($userRow) {
+        $tkId = $userRow['tk_id'];
+
+        // Cập nhật đường dẫn ảnh đại diện trong tai_khoan
+        if (!empty($hinhAnhUrl)) {
+            $upTk = $pdo->prepare("UPDATE tai_khoan SET hinh_anh_url = :url WHERE id = :id");
+            $upTk->execute([':url' => $hinhAnhUrl, ':id' => $tkId]);
+        }
+
+        // Cập nhật họ tên và SĐT tùy theo loại tài khoản (khach_hang hoặc nhan_vien)
+        if (!empty($hoTen)) {
+            if (!empty($userRow['kh_id'])) {
+                $upKh = $pdo->prepare("UPDATE khach_hang SET ho_ten = :name, so_dien_thoai = :phone WHERE id = :id");
+                $upKh->execute([':name' => $hoTen, ':phone' => $phone, ':id' => $userRow['kh_id']]);
+            }
+            if (!empty($userRow['nv_id'])) {
+                $upNv = $pdo->prepare("UPDATE nhan_vien SET ho_ten = :name, so_dien_thoai = :phone WHERE id = :id");
+                $upNv->execute([':name' => $hoTen, ':phone' => $phone, ':id' => $userRow['nv_id']]);
+            }
+        }
+    }
+
+    // Cập nhật lại $_SESSION['user']
+    if (isset($_SESSION['user'])) {
+        $_SESSION['user']['hinh_anh_url'] = $hinhAnhUrl;
+        $_SESSION['user']['avatar'] = $hinhAnhUrl;
+        if (!empty($hoTen)) {
+            $_SESSION['user']['ho_ten'] = $hoTen;
+            $_SESSION['user']['firstName'] = $firstName;
+            $_SESSION['user']['lastName'] = $lastName;
         }
     }
 
     echo json_encode([
-        'status' => 'success',
+        'status'  => 'success',
         'message' => 'Cập nhật hồ sơ cá nhân thành công!',
-        'user' => [
-            'email' => $email,
-            'firstName' => $firstName,
-            'lastName' => $lastName,
-            'ho_ten' => $hoTen,
-            'phone' => $phone,
-            'so_dien_thoai' => $phone,
+        'user'    => [
+            'email'        => $email,
+            'firstName'    => $firstName,
+            'lastName'     => $lastName,
+            'ho_ten'       => $hoTen,
+            'phone'        => $phone,
+            'so_dien_thoai'=> $phone,
             'hinh_anh_url' => $hinhAnhUrl,
-            'avatar' => $hinhAnhUrl
+            'avatar'       => $hinhAnhUrl
         ]
     ], JSON_UNESCAPED_UNICODE);
 
 } catch (Exception $e) {
+    http_response_code(500);
     echo json_encode([
-        'status' => 'error',
+        'status'  => 'error',
         'message' => 'Lỗi hệ thống: ' . $e->getMessage()
     ], JSON_UNESCAPED_UNICODE);
 }
