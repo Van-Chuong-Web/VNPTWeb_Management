@@ -1124,17 +1124,16 @@
   <span id="toastMsg">Thao tác thành công!</span>
 </div>
 
-<?php $jsPrefix = (strpos($_SERVER['REQUEST_URI'] ?? '', '/frontend/') !== false) ? 'js/' : 'frontend/js/'; ?>
-<script src="<?php echo $jsPrefix; ?>api.js?v=<?= time(); ?>"></script>
-<script src="<?php echo $jsPrefix; ?>i18n.js?v=<?= time(); ?>"></script>
-<script src="<?php echo $jsPrefix; ?>pages.js?v=<?= time(); ?>"></script>
-<script src="<?php echo $jsPrefix; ?>main.js?v=<?= time(); ?>"></script>
-<script src="<?php echo $jsPrefix; ?>chat.js?v=<?= time(); ?>"></script>
-<script src="<?php echo $jsPrefix; ?>cart.js?v=<?= time(); ?>"></script>
-<script src="<?php echo $jsPrefix; ?>auth.js?v=<?= time(); ?>"></script>
-<script src="<?php echo $jsPrefix; ?>account.js?v=<?= time(); ?>"></script>
-<script src="<?php echo $jsPrefix; ?>admin.js?v=<?= time(); ?>"></script>
-<script src="<?php echo $jsPrefix; ?>carousel.js?v=<?= time(); ?>"></script>
-<script src="<?php echo $jsPrefix; ?>search.js?v=<?= time(); ?>"></script>
+<script src="frontend/js/api.js?v=<?= time(); ?>"></script>
+<script src="frontend/js/i18n.js?v=<?= time(); ?>"></script>
+<script src="frontend/js/pages.js?v=<?= time(); ?>"></script>
+<script src="frontend/js/main.js?v=<?= time(); ?>"></script>
+<script src="frontend/js/chat.js?v=<?= time(); ?>"></script>
+<script src="frontend/js/cart.js?v=<?= time(); ?>"></script>
+<script src="frontend/js/auth.js?v=<?= time(); ?>"></script>
+<script src="frontend/js/account.js?v=<?= time(); ?>"></script>
+<script src="frontend/js/admin.js?v=<?= time(); ?>"></script>
+<script src="frontend/js/carousel.js?v=<?= time(); ?>"></script>
+<script src="frontend/js/search.js?v=<?= time(); ?>"></script>
 </body>
 </html>

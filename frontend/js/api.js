@@ -29,12 +29,7 @@
     if (endpoint.startsWith('http://') || endpoint.startsWith('https://') || endpoint.startsWith('data:')) {
       return endpoint;
     }
-    let cleanEndpoint = endpoint.replace(/^(\.\.\/|\/)+/, '');
-    const pathname = window.location.pathname;
-    if (pathname.includes('/frontend/')) {
-      return '../' + cleanEndpoint;
-    }
-    return cleanEndpoint;
+    return endpoint.replace(/^(\.\.\/|\/)+/, '');
   };
 
   // ---- "Ghi nhớ đăng nhập": token lưu ở localStorage (còn sau khi đóng trình
