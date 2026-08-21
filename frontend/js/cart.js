@@ -247,30 +247,36 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function removeFromCart(code) {
-        if (Api && typeof Api.getToken === 'function' && Api.getToken()) {
-            try {
-                await Api.removeFromCart(code);
-                fetchCart();
-                return;
-            } catch (_e) {}
-        }
-
         let cart = [];
         try { cart = JSON.parse(localStorage.getItem('vnpt_cart') || '[]'); } catch (_e) {}
-        cart = cart.filter(it => it.id !== code);
+
+        const targetCode = (code || '').toString().toLowerCase().trim();
+        cart = cart.filter(it => {
+            if (!it) return false;
+            const itemId = (it.id || '').toString().toLowerCase().trim();
+            const itemName = (it.name || '').toString().toLowerCase().trim();
+            return itemId !== targetCode && itemName !== targetCode;
+        });
+
         localStorage.setItem('vnpt_cart', JSON.stringify(cart));
         renderCart(cart);
+
+        try {
+            const cartUrl = (typeof window.getApiPath === 'function') ? window.getApiPath('backend/api/cart.php?action=remove&remove_id=' + encodeURIComponent(code)) : 'backend/api/cart.php?action=remove&remove_id=' + encodeURIComponent(code);
+            fetch(cartUrl).catch(() => {});
+        } catch (_e) {}
     }
 
     if (clearCartBtn) {
         clearCartBtn.onclick = async (e) => {
             e.preventDefault();
-            if (Api && typeof Api.getToken === 'function' && Api.getToken()) {
-                try { await Api.clearCart(); } catch (_e) {}
-            }
             localStorage.removeItem('vnpt_cart');
             renderCart([]);
             showToast('Đã xóa tất cả sản phẩm khỏi giỏ hàng!');
+            try {
+                const cartUrl = (typeof window.getApiPath === 'function') ? window.getApiPath('backend/api/cart.php?action=clear') : 'backend/api/cart.php?action=clear';
+                fetch(cartUrl).catch(() => {});
+            } catch (_e) {}
         };
     }
 
@@ -301,11 +307,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     /* ---- Lắng nghe sự kiện Thêm sản phẩm vào giỏ từ toàn bộ giao diện ---- */
     document.addEventListener('click', async function(e) {
-        const addBtn = e.target.closest('.btn-add-cart, .btn-price, .btn-service, .btn-register, [data-action="add-cart"]') ||
-                       (e.target.closest('.service-card, .price-card, .product-card') ? e.target.closest('button, .btn-primary, .btn') : null);
+        // Bỏ qua nếu bấm vào nút xóa, nút tăng/giảm hoặc bên trong Sidebar giỏ hàng
+        if (e.target.closest('.cart-item-remove, .qty-btn, .cart-sidebar, #cartSidebar, #cartOverlay, #cartFooter')) {
+            return;
+        }
+
+        const addBtn = e.target.closest('.btn-add-cart, [data-action="add-cart"]');
+        if (!addBtn) return;
         
-        if (!addBtn || 
-            addBtn.id === 'openLogin' || 
+        if (addBtn.id === 'openLogin' || 
             addBtn.id === 'openRegister' || 
             addBtn.closest('#authBtns') || 
             addBtn.closest('.auth-btns') || 
@@ -340,21 +350,29 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        const attrName = addBtn.getAttribute('data-name');
+        const attrCode = addBtn.getAttribute('data-id') || addBtn.getAttribute('data-code');
+        const attrPrice = addBtn.getAttribute('data-price');
+        const attrIcon = addBtn.getAttribute('data-icon');
+        const attrColor = addBtn.getAttribute('data-color');
+
         const card = addBtn.closest('.service-card, .price-card, .card, .product-card') || addBtn.parentElement;
         const titleEl = card ? card.querySelector('h3, .price-plan-name, .card-title, .product-title') : null;
         const priceEl = card ? card.querySelector('.price-num, .card-meta, .price, .product-price') : null;
 
-        const name = addBtn.getAttribute('data-name') || (titleEl ? titleEl.textContent.trim() : 'Dịch vụ số VNPT');
-        const code = addBtn.getAttribute('data-id') || addBtn.getAttribute('data-code') || name.toLowerCase().replace(/\s+/g, '-');
+        const name = attrName || (titleEl ? titleEl.textContent.trim() : 'Dịch vụ số VNPT');
+        const code = attrCode || name.toLowerCase().replace(/\s+/g, '-');
         
         let price = 1500000;
-        if (priceEl) {
+        if (attrPrice && !isNaN(parseInt(attrPrice, 10))) {
+            price = parseInt(attrPrice, 10);
+        } else if (priceEl) {
             const rawPrice = priceEl.textContent.replace(/[^0-9]/g, '');
             if (rawPrice) price = parseInt(rawPrice, 10);
         }
 
-        const icon = card && card.querySelector('.card-icon, i') ? (card.querySelector('.card-icon, i').getAttribute('data-lucide') || 'package') : 'package';
-        const color = card && card.querySelector('.card-icon-wrap') ? (card.querySelector('.card-icon-wrap').style.getPropertyValue('--card-color') || '#0066CC') : '#0066CC';
+        const icon = attrIcon || (card && card.querySelector('.card-icon, i') ? (card.querySelector('.card-icon, i').getAttribute('data-lucide') || 'package') : 'package');
+        const color = attrColor || (card && card.querySelector('.card-icon-wrap') ? (card.querySelector('.card-icon-wrap').style.getPropertyValue('--card-color') || '#0066CC') : '#0066CC');
 
         const codeSlug = code.toLowerCase().replace(/\s+/g, '-');
         const nameSlug = name.toLowerCase().replace(/\s+/g, '-');
