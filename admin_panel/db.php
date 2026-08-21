@@ -1,6 +1,6 @@
 <?php
 /**
- * db.php — Kết nối PDO đến database Aiven Cloud MySQL (MERGED)
+ * db.php — Kết nối PDO đến CSDL MySQL website_vnpt (MERGED)
  */
 
 // Đọc file .env nếu có
@@ -19,23 +19,11 @@ if (file_exists($envFile)) {
     }
 }
 
-$defaultPass = base64_decode('QVZOU19oc3JpWm9vX212SWp0Q3Jib2FS');
-
-$envHost = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: 'db-web-nguyenhoanggiakhang-dabd.a.aivencloud.com';
-if ($envHost === 'localhost' || $envHost === '127.0.0.1') {
-    $envHost = 'db-web-nguyenhoanggiakhang-dabd.a.aivencloud.com';
-}
-$envPort = $_ENV['DB_PORT'] ?? getenv('DB_PORT') ?: '11935';
-if ($envPort == '3306') $envPort = '11935';
-
-$envName = $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: 'defaultdb';
-if ($envName === 'website_vnpt') $envName = 'defaultdb';
-
-$envUser = $_ENV['DB_USER'] ?? getenv('DB_USER') ?: 'avnadmin';
-if ($envUser === 'root' || $envUser === 'vnpt_user') $envUser = 'avnadmin';
-
-$envPass = $_ENV['DB_PASSWORD'] ?? getenv('DB_PASSWORD') ?: ($_ENV['DB_PASS'] ?? getenv('DB_PASS') ?: $defaultPass);
-if (empty($envPass)) $envPass = $defaultPass;
+$envHost = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: 'localhost';
+$envPort = $_ENV['DB_PORT'] ?? getenv('DB_PORT') ?: '3306';
+$envName = $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: 'website_vnpt';
+$envUser = $_ENV['DB_USER'] ?? getenv('DB_USER') ?: 'root';
+$envPass = $_ENV['DB_PASSWORD'] ?? getenv('DB_PASSWORD') ?: ($_ENV['DB_PASS'] ?? getenv('DB_PASS') ?: '');
 
 if (!defined('DB_HOST')) define('DB_HOST',    $envHost);
 if (!defined('DB_PORT')) define('DB_PORT',    $envPort);
@@ -54,16 +42,25 @@ $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     PDO::ATTR_EMULATE_PREPARES   => false,
-    PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
 ];
 
 try {
     $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
 } catch (PDOException $e) {
-    http_response_code(500);
-    die('<div style="font-family:sans-serif;padding:2rem;color:#dc3545;">
-        <h3>⚠️ Không thể kết nối cơ sở dữ liệu</h3>
-        <p>Vui lòng kiểm tra thông tin kết nối Aiven Cloud MySQL:</p>
-        <details><summary>Chi tiết lỗi (debug)</summary><pre>' . htmlspecialchars($e->getMessage()) . '</pre></details>
-    </div>');
+    // Thử fallback sang vnpt_user nếu root lỗi
+    try {
+        $pdo = new PDO(
+            sprintf('mysql:host=%s;port=%s;dbname=%s;charset=%s', DB_HOST, DB_PORT, DB_NAME, DB_CHARSET),
+            'vnpt_user',
+            'MatKhauBaoMat123@#$',
+            $options
+        );
+    } catch (PDOException $e2) {
+        http_response_code(500);
+        die('<div style="font-family:sans-serif;padding:2rem;color:#dc3545;">
+            <h3>⚠️ Không thể kết nối cơ sở dữ liệu website_vnpt</h3>
+            <p>Vui lòng kiểm tra MySQL server và database website_vnpt trên máy chủ.</p>
+            <details><summary>Chi tiết lỗi (debug)</summary><pre>' . htmlspecialchars($e2->getMessage()) . '</pre></details>
+        </div>');
+    }
 }
