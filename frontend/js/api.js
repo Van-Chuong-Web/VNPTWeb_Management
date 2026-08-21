@@ -12,7 +12,16 @@
     if (endpoint.startsWith('http://') || endpoint.startsWith('https://') || endpoint.startsWith('data:')) {
       return endpoint;
     }
-    return endpoint.replace(/^(\.\.\/|\/)+/, '');
+    const clean = endpoint.replace(/^(\.\.\/|\/)+/, '');
+    const pathName = window.location.pathname || '';
+    const match = pathName.match(/^(\/[^\/]+)\//);
+    if (match && match[1] && match[1] !== '/frontend' && match[1] !== '/backend') {
+      const subpath = match[1];
+      if (!clean.startsWith(subpath.replace('/', ''))) {
+        return subpath + '/' + clean;
+      }
+    }
+    return clean;
   };
 
   function getToken() {

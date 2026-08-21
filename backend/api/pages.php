@@ -16,6 +16,18 @@ function toCleanSlug($str) {
     return trim($str, '-');
 }
 
+function fixImgPath($path) {
+    if (empty($path)) return '';
+    if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://') || str_starts_with($path, 'data:')) {
+        return $path;
+    }
+    $clean = ltrim($path, '/');
+    if (!str_starts_with($clean, 'frontend/') && !str_starts_with($clean, 'uploads/')) {
+        $clean = 'frontend/assets/images/uploads/' . $clean;
+    }
+    return $clean;
+}
+
 $rawSlug = trim($_GET['slug'] ?? '');
 if (!$rawSlug) {
     echo json_encode(['status' => 'error', 'message' => 'Slug không hợp lệ']);
@@ -54,7 +66,7 @@ if (!empty($resPost)) {
             'title'         => $r['tieu_de'],
             'slug'          => $r['slug'],
             'tom_tat'       => $r['tom_tat'],
-            'anh_bia'       => $r['anh_bia'],
+            'anh_bia'       => fixImgPath($r['anh_bia']),
             'ngay_xuat_ban' => $r['ngay_xuat_ban'] ? date('H:i | d/m/Y', strtotime($r['ngay_xuat_ban'])) : ''
         ];
     }, $resRelated ?: []);
@@ -67,7 +79,7 @@ if (!empty($resPost)) {
             'title'         => $post['tieu_de'],
             'subtitle'      => $post['tom_tat'],
             'noi_dung'      => $post['noi_dung'],
-            'anh_bia'       => $post['anh_bia'],
+            'anh_bia'       => fixImgPath($post['anh_bia']),
             'danh_muc'      => $post['ten_danh_muc'] ?: 'Tin tức',
             'tac_gia'       => $post['ten_tac_gia'] ?: 'BQT VNPT',
             'ngay_xuat_ban' => $post['ngay_xuat_ban'] ? date('H:i | d/m/Y', strtotime($post['ngay_xuat_ban'])) : '',
@@ -117,7 +129,7 @@ if ($isNewsSection) {
             'title'         => $p['tieu_de'],
             'slug'          => $p['slug'],
             'tom_tat'       => $p['tom_tat'],
-            'anh_bia'       => $p['anh_bia'],
+            'anh_bia'       => fixImgPath($p['anh_bia']),
             'danh_muc'      => $p['ten_danh_muc'] ?: 'Tin tức',
             'tac_gia'       => $p['ten_tac_gia'] ?: 'BQT VNPT',
             'ngay_xuat_ban' => $p['ngay_xuat_ban'] ? date('d/m/Y H:i', strtotime($p['ngay_xuat_ban'])) : ''
