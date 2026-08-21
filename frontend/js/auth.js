@@ -350,10 +350,31 @@ window.closeAllAuthModals = function() {
       if (adminBtn) {
         adminBtn.style.setProperty('display', isStaff ? 'flex' : 'none', 'important');
       }
+
+      // Ẩn nút Giỏ hàng & Đơn hàng của tôi đối với tài khoản Nhân viên / Quản trị viên
+      const cartToggle = document.getElementById('cartToggle');
+      if (cartToggle) {
+        cartToggle.style.display = isStaff ? 'none' : 'inline-flex';
+      }
+
+      const ordersItem = document.getElementById('userOrdersDropdownItem');
+      if (ordersItem) {
+        ordersItem.style.display = isStaff ? 'none' : 'flex';
+      }
     } else {
       authBtns && (authBtns.style.display = 'flex');
       userMenu && (userMenu.style.display = 'none');
       document.body.classList.remove('is-admin');
+
+      // Khôi phục trạng thái Giỏ hàng & Đơn hàng của tôi khi Đăng xuất (Hoặc chưa đăng nhập)
+      const cartToggle = document.getElementById('cartToggle');
+      if (cartToggle) {
+        cartToggle.style.display = 'inline-flex';
+      }
+      const ordersItem = document.getElementById('userOrdersDropdownItem');
+      if (ordersItem) {
+        ordersItem.style.display = 'flex';
+      }
     }
     document.dispatchEvent(new CustomEvent('vnpt:authchange'));
     if (window.lucide) lucide.createIcons();

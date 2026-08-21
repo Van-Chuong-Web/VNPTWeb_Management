@@ -193,7 +193,7 @@ function renderMenuHTML($menuTree, $parentId = 0)
                 <span id="userDropdownEmail" class="user-dropdown-email"></span>
               </div>
               <a href="javascript:void(0)" class="user-dropdown-item" data-account="profile"><i data-lucide="user"></i> Hồ sơ cá nhân</a>
-              <a href="javascript:void(0)" class="user-dropdown-item" data-account="orders"><i data-lucide="package"></i> Đơn hàng của tôi</a>
+              <a href="javascript:void(0)" class="user-dropdown-item" data-account="orders" id="userOrdersDropdownItem"><i data-lucide="package"></i> Đơn hàng của tôi</a>
               <a href="javascript:void(0)" class="user-dropdown-item" data-account="settings"><i data-lucide="settings"></i> Cài đặt</a>
               <button class="user-dropdown-item admin-only admin-entry" id="openAdminBtn"><i
                   data-lucide="layout-dashboard"></i> Quản trị hệ thống</button>

@@ -49,7 +49,25 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 3500);
     }
 
+    function isStaffUser() {
+        try {
+            const uStr = localStorage.getItem('vnpt_user') || sessionStorage.getItem('vnpt_user');
+            if (!uStr) return false;
+            const u = JSON.parse(uStr);
+            if (!u) return false;
+            const email = (u.email || '').toLowerCase();
+            const rawRole = u.role || u.ten_vai_tro || '';
+            return (u.loai_tai_khoan === 'nhan_vien') || 
+                   email.endsWith('@vnpt.vn') || email.includes('admin') || email.includes('editor') || email.includes('manager') ||
+                   ['admin', 'quan_tri_vien', 'bien_tap_vien', 'nhan_vien_ban_hang', 'quan_ly', 'editor', 'staff'].includes(rawRole);
+        } catch(e) { return false; }
+    }
+
     function openCart() {
+        if (isStaffUser()) {
+            safeShowToast('Tài khoản Quản trị / Nhân viên không sử dụng Giỏ hàng khách hàng!', true);
+            return;
+        }
         const cartSidebarEl = document.getElementById('cartSidebar') || cartSidebar;
         const cartOverlayEl = document.getElementById('cartOverlay') || cartOverlay;
         if (cartSidebarEl) cartSidebarEl.classList.add('open');
@@ -147,7 +165,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const totalItems = currentCartItems.length;
         if (cartBadge) {
-            if (totalItems > 0) {
+            if (totalItems > 0 && !isStaffUser()) {
                 cartBadge.style.display = 'flex';
                 cartBadge.innerText = totalItems > 99 ? '99+' : totalItems;
             } else {

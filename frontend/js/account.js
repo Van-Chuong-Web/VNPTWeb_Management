@@ -79,15 +79,27 @@
     da_huy: 'Đã hủy',
   };
 
+  function isStaffAccount(u) {
+    if (!u) return false;
+    const email = (u.email || '').toLowerCase();
+    const rawRole = u.role || u.ten_vai_tro || '';
+    return (u.loai_tai_khoan === 'nhan_vien') || 
+           email.endsWith('@vnpt.vn') || email.includes('admin') || email.includes('editor') || email.includes('manager') ||
+           ['admin', 'quan_tri_vien', 'bien_tap_vien', 'nhan_vien_ban_hang', 'quan_ly', 'editor', 'staff'].includes(rawRole);
+  }
+
   /* ------------------------------------------------------------
    * Sidebar dùng chung cho cả 3 trang tài khoản
    * ------------------------------------------------------------ */
   function sideNavHtml(active, user) {
+    const isStaff = isStaffAccount(user);
     const items = [
       { key: 'profile', icon: 'user', label: 'Hồ sơ cá nhân' },
-      { key: 'orders', icon: 'package', label: 'Đơn hàng của tôi' },
       { key: 'settings', icon: 'settings', label: 'Cài đặt' },
     ];
+    if (!isStaff) {
+      items.splice(1, 0, { key: 'orders', icon: 'package', label: 'Đơn hàng của tôi' });
+    }
     const avatarPath = user.hinh_anh_url || user.avatar || '';
     const avatarSrc = avatarPath ? (avatarPath.startsWith('http') || avatarPath.startsWith('data:') ? avatarPath : avatarPath.replace(/^(\.\.\/|\/)+/, '')) : '';
 
@@ -576,7 +588,11 @@
       document.getElementById('openLogin')?.click();
       return;
     }
-    if (which === 'orders') return renderOrders(user);
+    const isStaff = isStaffAccount(user);
+    if (which === 'orders') {
+      if (isStaff) return renderProfile(user);
+      return renderOrders(user);
+    }
     if (which === 'settings') return renderSettings(user);
     return renderProfile(user);
   }
