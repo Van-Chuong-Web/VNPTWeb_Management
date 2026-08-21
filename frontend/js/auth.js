@@ -507,8 +507,8 @@ window.closeAllAuthModals = function() {
 
     if (!firstName) { setFieldError('regFirstName','regFirstNameErr','Vui lòng nhập họ'); valid = false; }
     if (!lastName)  { setFieldError('regLastName','regLastNameErr','Vui lòng nhập tên'); valid = false; }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setFieldError('regEmail','regEmailErr','Email không hợp lệ'); valid = false;
+    if (!email || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+      setFieldError('regEmail','regEmailErr','Địa chỉ Email không hợp lệ (ví dụ: tenban@gmail.com)'); valid = false;
     }
     if (phone && !/^(0|\+84)(3|5|7|8|9)[0-9]{8}$/.test(phone.replace(/\s/g,''))) {
       setFieldError('regPhone','regPhoneErr','Số điện thoại không hợp lệ (10 số, bắt đầu 03,05,07,08,09)'); valid = false;

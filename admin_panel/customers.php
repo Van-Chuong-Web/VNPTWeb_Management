@@ -26,8 +26,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$hoTen || !$email) {
             $msg = 'Vui lòng điền đầy đủ Họ tên và Email.';
             $msgType = 'danger';
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $msg = 'Địa chỉ email không hợp lệ.';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL) || !preg_match('/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $email)) {
+            $msg = '⚠️ Địa chỉ Email không hợp lệ! Vui lòng nhập đúng định dạng (ví dụ: khachhang@gmail.com).';
             $msgType = 'danger';
         } elseif ($sdt !== '' && !preg_match('/^(0|\+84)(3|5|7|8|9)[0-9]{8}$/', $sdt)) {
             $msg = '⚠️ Số điện thoại không hợp lệ! Vui lòng nhập số điện thoại chuẩn Việt Nam (10 chữ số, bắt đầu bằng 03, 05, 07, 08, 09 hoặc +84).';
@@ -97,8 +97,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$id || !$hoTen || !$email) {
             $msg = 'Dữ liệu không hợp lệ.';
             $msgType = 'danger';
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $msg = 'Địa chỉ email không hợp lệ.';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL) || !preg_match('/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $email)) {
+            $msg = '⚠️ Địa chỉ Email không hợp lệ! Vui lòng nhập đúng định dạng (ví dụ: khachhang@gmail.com).';
             $msgType = 'danger';
         } elseif ($sdt !== '' && !preg_match('/^(0|\+84)(3|5|7|8|9)[0-9]{8}$/', $sdt)) {
             $msg = '⚠️ Số điện thoại không hợp lệ! Vui lòng nhập số điện thoại chuẩn Việt Nam (10 chữ số, bắt đầu bằng 03, 05, 07, 08, 09 hoặc +84).';

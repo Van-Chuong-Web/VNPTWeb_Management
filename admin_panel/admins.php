@@ -44,8 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$hoTen || !$email || !$matKhau || $vaiTroId <= 0) {
             $msg = 'Vui lòng điền đầy đủ Họ tên, Email, Mật khẩu và chọn Vai trò.';
             $msgType = 'danger';
-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $msg = 'Địa chỉ email không hợp lệ.';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL) || !preg_match('/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $email)) {
+            $msg = '⚠️ Địa chỉ Email không hợp lệ! Vui lòng nhập đúng định dạng (ví dụ: nhanvien@vnpt.vn).';
             $msgType = 'danger';
         } elseif (strlen($matKhau) < 6) {
             $msg = 'Mật khẩu phải có ít nhất 6 ký tự.';

@@ -29,9 +29,9 @@ try {
         exit;
     }
 
-    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL) || !preg_match('/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $email)) {
         http_response_code(400);
-        echo json_encode(['status' => 'error', 'error' => 'Địa chỉ Email không hợp lệ.']);
+        echo json_encode(['status' => 'error', 'error' => '⚠️ Địa chỉ Email không hợp lệ! Vui lòng nhập đúng định dạng (ví dụ: khachhang@gmail.com).']);
         exit;
     }
 
