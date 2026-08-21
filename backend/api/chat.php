@@ -1,6 +1,6 @@
 <?php
 /**
- * backend/api/chat.php — API Chatbot VNPT Smart AI Tích hợp Google Gemini AI Trực tiếp (Fix key fallback & 100% Gemini AI)
+ * backend/api/chat.php — API Chatbot VNPT Smart AI Tích hợp Google Gemini AI (Hỗ trợ cả cURL & file_get_contents)
  */
 
 @set_time_limit(60);
@@ -43,26 +43,57 @@ function callGeminiAI($userMessage, $apiKey) {
     ];
 
     $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=" . $apiKey;
+    $jsonPayload = json_encode($payload, JSON_UNESCAPED_UNICODE);
 
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload, JSON_UNESCAPED_UNICODE));
-    curl_setopt($ch, CURLOPT_TIMEOUT, 45);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    // 1. Thử dùng cURL nếu cURL extension được bật trên VPS
+    if (function_exists('curl_init')) {
+        try {
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 45);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
-    $res = curl_exec($ch);
-    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+            $res = curl_exec($ch);
+            $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
 
-    if ($res && ($code === 200 || $code === 201)) {
-        $json = json_decode($res, true);
-        if (!empty($json['candidates'][0]['content']['parts'][0]['text'])) {
-            return trim($json['candidates'][0]['content']['parts'][0]['text']);
-        }
+            if ($res && ($code === 200 || $code === 201)) {
+                $json = json_decode($res, true);
+                if (!empty($json['candidates'][0]['content']['parts'][0]['text'])) {
+                    return trim($json['candidates'][0]['content']['parts'][0]['text']);
+                }
+            }
+        } catch (Throwable $_e1) {}
     }
+
+    // 2. Thử dùng file_get_contents stream context (Dự phòng nếu VPS chưa bật php-curl)
+    try {
+        $opts = [
+            'http' => [
+                'method'  => 'POST',
+                'header'  => "Content-Type: application/json\r\n",
+                'content' => $jsonPayload,
+                'timeout' => 45,
+                'ignore_errors' => true
+            ],
+            'ssl' => [
+                'verify_peer'      => false,
+                'verify_peer_name' => false
+            ]
+        ];
+        $context = stream_context_create($opts);
+        $res = @file_get_contents($url, false, $context);
+        if ($res) {
+            $json = json_decode($res, true);
+            if (!empty($json['candidates'][0]['content']['parts'][0]['text'])) {
+                return trim($json['candidates'][0]['content']['parts'][0]['text']);
+            }
+        }
+    } catch (Throwable $_e2) {}
 
     return null;
 }
