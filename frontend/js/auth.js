@@ -529,33 +529,27 @@ window.closeAllAuthModals = function() {
       }
     };
 
-    if (await backendReady()) {
-      // ---- ONLINE: gọi API ----
-      try {
-        const { token, user } = await Api.register({ firstName, lastName, email, phone, password });
-        succeed(user, token);
-      } catch (err) {
-        failReg(err.message || 'Đăng ký thất bại. Vui lòng thử lại.');
+    try {
+      // Đăng ký trực tiếp vào CSDL MySQL qua PHP API
+      const regUrl = (typeof window.getApiPath === 'function') ? window.getApiPath('backend/api/register.php') : 'backend/api/register.php';
+      const res = await fetch(regUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ firstName, lastName, email, phone, password })
+      });
+      const data = await res.json();
+
+      if (res.ok && data.status === 'success' && data.user) {
+        succeed(data.user, data.token);
+        return;
       }
+
+      failReg(data?.error || 'Đăng ký không thành công. Vui lòng thử lại.');
+      return;
+    } catch (err) {
+      failReg('Lỗi kết nối tới hệ thống cơ sở dữ liệu. Vui lòng thử lại sau.');
       return;
     }
-
-    // ---- OFFLINE: localStorage ----
-    setTimeout(() => {
-      const users = getUsers();
-      if (users.find(u => u.email === email)) {
-        failReg('⚠️ Email này đã được đăng ký. Vui lòng đăng nhập hoặc dùng email khác.');
-        return;
-      }
-      if (phone && users.find(u => u.phone === phone || u.so_dien_thoai === phone)) {
-        failReg('⚠️ Số điện thoại này đã được đăng ký. Vui lòng kiểm tra lại hoặc dùng số khác.');
-        return;
-      }
-      const newUser = { id: Date.now(), firstName, lastName, email, phone, password, role: 'customer' };
-      users.push(newUser);
-      saveUsers(users);
-      succeed(newUser);
-    }, 800);
   });
 
   /* ---- Password strength live ---- */
