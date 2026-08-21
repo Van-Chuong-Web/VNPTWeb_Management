@@ -34,7 +34,7 @@ try {
     $stmt = $pdo->prepare("
         SELECT tk.id AS tk_id, tk.email, tk.hinh_anh_url, tk.loai_tai_khoan,
                kh.id AS kh_id, kh.ho_ten AS kh_ho_ten, kh.so_dien_thoai AS kh_sdt,
-               nv.id AS nv_id, nv.ho_ten AS nv_ho_ten, nv.so_dien_thoai AS nv_sdt
+               nv.id AS nv_id, nv.ho_ten AS nv_ho_ten
         FROM tai_khoan tk
         LEFT JOIN khach_hang kh ON kh.tai_khoan_id = tk.id
         LEFT JOIN nhan_vien nv ON nv.tai_khoan_id = tk.id
@@ -47,7 +47,7 @@ try {
     if ($action === 'get') {
         if ($userRow) {
             $displayName = !empty($userRow['kh_ho_ten']) ? $userRow['kh_ho_ten'] : (!empty($userRow['nv_ho_ten']) ? $userRow['nv_ho_ten'] : $userRow['email']);
-            $displayPhone = !empty($userRow['kh_sdt']) ? $userRow['kh_sdt'] : ($userRow['nv_sdt'] ?? '');
+            $displayPhone = !empty($userRow['kh_sdt']) ? $userRow['kh_sdt'] : '';
 
             echo json_encode([
                 'status' => 'success',
@@ -121,8 +121,8 @@ try {
             $upKh = $pdo->prepare("UPDATE khach_hang SET ho_ten = :name, so_dien_thoai = :phone WHERE id = :id");
             $upKh->execute([':name' => $hoTen, ':phone' => $phone, ':id' => $userRow['kh_id']]);
         } elseif (!empty($userRow['nv_id'])) {
-            $upNv = $pdo->prepare("UPDATE nhan_vien SET ho_ten = :name, so_dien_thoai = :phone WHERE id = :id");
-            $upNv->execute([':name' => $hoTen, ':phone' => $phone, ':id' => $userRow['nv_id']]);
+            $upNv = $pdo->prepare("UPDATE nhan_vien SET ho_ten = :name WHERE id = :id");
+            $upNv->execute([':name' => $hoTen, ':id' => $userRow['nv_id']]);
         } else {
             // Tự động tạo bản ghi khach_hang mới nếu chưa có
             $insKh = $pdo->prepare("INSERT INTO khach_hang (tai_khoan_id, ho_ten, so_dien_thoai) VALUES (:tkId, :name, :phone)");
