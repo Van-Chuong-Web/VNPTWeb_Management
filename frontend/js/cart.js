@@ -650,9 +650,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const itemsToPay = (lastCheckoutItems && lastCheckoutItems.length) ? lastCheckoutItems : currentCartItems;
         const totalAmount = itemsToPay.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0);
 
+        let isSuccess = false;
+        let returnedOrderCode = orderCode;
+
         try {
             const ordersUrl = (typeof window.getApiPath === 'function') ? window.getApiPath('backend/api/orders.php') : 'backend/api/orders.php';
-            await fetch(ordersUrl, {
+            const res = await fetch(ordersUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -663,7 +666,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     note: 'Thanh toán đơn hàng #' + orderCode
                 })
             });
-        } catch (_err) {}
+            const data = await res.json();
+            if (res.ok && data && (data.status === 'success' || data.orderCode)) {
+                isSuccess = true;
+                if (data.orderCode) returnedOrderCode = data.orderCode;
+            } else {
+                safeShowToast('⚠️ ' + (data.message || data.error || 'Lỗi lưu đơn hàng vào CSDL'), true);
+            }
+        } catch (err) {
+            safeShowToast('⚠️ Lỗi kết nối máy chủ: ' + err.message, true);
+        }
+
+        if (!isSuccess) return;
 
         markProductsAsPurchased(itemsToPay);
 
@@ -677,15 +691,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const successInfo = document.getElementById('paymentSuccessInfo');
         if (successInfo) {
             successInfo.innerHTML = `
-                <div><strong>Mã đơn hàng:</strong> <span style="color:#0066CC;">#${orderCode}</span></div>
+                <div><strong>Mã đơn hàng:</strong> <span style="color:#0066CC;">#${returnedOrderCode}</span></div>
                 <div><strong>Tổng thanh toán:</strong> <span style="color:#CC3300; font-weight:700;">${totalFormatted}</span></div>
-                <div><strong>Trạng thái:</strong> <span style="color:#00AA55; font-weight:600;">Đã ghi nhận thanh toán</span></div>
+                <div><strong>Trạng thái:</strong> <span style="color:#00AA55; font-weight:600;">Đã ghi nhận thanh toán vào CSDL</span></div>
                 <div><strong>Thời gian:</strong> ${new Date().toLocaleString('vi-VN')}</div>
             `;
         }
 
         if (paymentSuccessModal) paymentSuccessModal.classList.add('open');
-        showToast('Thanh toán thành công! Mã đơn: #' + orderCode);
+        showToast('🎉 Thanh toán thành công! Đã lưu đơn hàng #' + returnedOrderCode + ' vào CSDL!');
 
         // Báo cho giao diện "Đơn hàng của tôi" tự động nạp lại dữ liệu đơn hàng mới từ MySQL
         document.dispatchEvent(new CustomEvent('vnpt:ordercreated'));
