@@ -169,15 +169,18 @@ document.addEventListener('DOMContentLoaded', function() {
         let totalMoney = 0;
 
         currentCartItems.forEach((item) => {
-            totalMoney += item.price * 1;
+            const qty = item.qty || 1;
+            totalMoney += item.price * qty;
             html += `
                 <div class="cart-item">
                     <div class="cart-item-icon" style="background: ${item.color || '#0066CC'}"><i data-lucide="${item.icon || 'package'}"></i></div>
                     <div class="cart-item-info">
                         <div class="cart-item-name">${item.name}</div>
                         <div class="cart-item-price">${new Intl.NumberFormat('vi-VN').format(item.price)} ₫</div>
-                        <div style="font-size: 0.78rem; font-weight: 700; color: #0066CC; background: #F0F9FF; padding: 2px 8px; border-radius: 6px; border: 1px solid #BAE6FD; display: inline-block; margin-top: 4px;">
-                            Số lượng: 1 (Tối đa 1 gói)
+                        <div style="display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 2px 6px;">
+                            <button type="button" class="qty-btn btn-minus" data-code="${item.id}" data-qty="${qty}" style="background:none; border:none; cursor:pointer; color:#0066CC; font-weight:800; font-size:1rem; padding:2px 6px;">-</button>
+                            <span style="font-size: 0.85rem; font-weight: 800; color: #0F172A; min-width:18px; text-align:center;">${qty}</span>
+                            <button type="button" class="qty-btn btn-plus" data-code="${item.id}" data-qty="${qty}" style="background:none; border:none; cursor:pointer; color:#0066CC; font-weight:800; font-size:1rem; padding:2px 6px;">+</button>
                         </div>
                     </div>
                     <div class="cart-item-remove" data-code="${item.id}" title="Xóa khỏi giỏ hàng"><i data-lucide="trash-2"></i></div>
@@ -188,7 +191,7 @@ document.addEventListener('DOMContentLoaded', function() {
         cartItemsContainer.innerHTML = html;
         
         const formattedTotal = new Intl.NumberFormat('vi-VN').format(totalMoney) + ' ₫';
-        if (cartCount) cartCount.innerText = currentCartItems.length;
+        if (cartCount) cartCount.innerText = currentCartItems.reduce((sum, i) => sum + (i.qty || 1), 0);
         if (cartSubtotal) cartSubtotal.innerText = formattedTotal;
         if (cartTotal) cartTotal.innerText = formattedTotal;
 
@@ -223,27 +226,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function updateCartQty(code, qty) {
-        if (qty > 1) {
-            showToast('⚠️ MỖI SẢN PHẨM CHỈ ĐƯỢC MUA 1 LẦN! Số lượng tối đa cho mỗi gói sản phẩm là 1.');
-            qty = 1;
-        }
-
-        if (Api && typeof Api.getToken === 'function' && Api.getToken()) {
-            try {
-                await Api.setCartQty(code, qty);
-                fetchCart();
-                return;
-            } catch (_e) {}
-        }
-
         let cart = [];
         try { cart = JSON.parse(localStorage.getItem('vnpt_cart') || '[]'); } catch (_e) {}
-        const item = cart.find(it => it.id === code);
-        if (item) {
-            item.qty = qty;
+
+        const itemIdx = cart.findIndex(it => (it.id || '').toString().toLowerCase() === (code || '').toLowerCase() || (it.name || '').toString().toLowerCase() === (code || '').toLowerCase());
+        if (itemIdx > -1) {
+            cart[itemIdx].qty = Math.max(1, qty);
             localStorage.setItem('vnpt_cart', JSON.stringify(cart));
+            renderCart(cart);
+
+            try {
+                const cartUrl = (typeof window.getApiPath === 'function') ? window.getApiPath('backend/api/cart.php') : 'backend/api/cart.php';
+                fetch(cartUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: code, qty: Math.max(1, qty) })
+                }).catch(() => {});
+            } catch (_e) {}
         }
-        renderCart(cart);
     }
 
     async function removeFromCart(code) {
@@ -359,23 +359,34 @@ document.addEventListener('DOMContentLoaded', function() {
         const codeSlug = code.toLowerCase().replace(/\s+/g, '-');
         const nameSlug = name.toLowerCase().replace(/\s+/g, '-');
 
-        // 🔴 ĐIỀU KIỆN 1: Kiểm tra xem sản phẩm đã có trong giỏ hàng hiện tại (currentCartItems) hay chưa
-        const existingInCart = (currentCartItems || []).find(item => {
+        let cart = [];
+        try { cart = JSON.parse(localStorage.getItem('vnpt_cart') || '[]'); } catch (_err) { cart = []; }
+
+        const existingIndex = (cart || []).findIndex(item => {
             if (!item) return false;
             const itemId = (item.id || '').toString().toLowerCase();
             const itemName = (item.name || '').toString().toLowerCase().trim();
             return itemId === code.toLowerCase() || itemId === codeSlug || itemId === nameSlug || itemName === name.toLowerCase().trim();
         });
 
-        if (existingInCart) {
-            safeShowToast(`⚠️ Gói "${name}" đã có trong giỏ hàng!`, true);
+        if (existingIndex > -1) {
+            cart[existingIndex].qty = (cart[existingIndex].qty || 1) + 1;
+            localStorage.setItem('vnpt_cart', JSON.stringify(cart));
+            renderCart(cart);
+
+            try {
+                const cartUrl = (typeof window.getApiPath === 'function') ? window.getApiPath('backend/api/cart.php') : 'backend/api/cart.php';
+                fetch(cartUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(cart[existingIndex])
+                }).catch(() => {});
+            } catch (_e) {}
+
+            safeShowToast(`🛒 Đã tăng số lượng gói "${name}" lên ${cart[existingIndex].qty}!`);
             openCart();
             return;
         }
-
-        // Thêm sản phẩm trực tiếp vào giỏ hàng instant 0ms
-        let cart = [];
-        try { cart = JSON.parse(localStorage.getItem('vnpt_cart') || '[]'); } catch (_err) { cart = []; }
 
         const newItem = { id: code, name, price, qty: 1, icon, color };
         cart.push(newItem);

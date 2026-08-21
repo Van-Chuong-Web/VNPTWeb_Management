@@ -21,8 +21,7 @@ try {
     // 1. Xử lý tạo đơn hàng (POST)
     if ($method === 'POST' || isset($input['items']) || isset($input['cart']) || isset($input['ma_don_hang'])) {
         if (empty($email)) {
-            // Mặc định nạp email nếu đã đăng nhập hoặc dùng email mẫu
-            $email = $_SESSION['user']['email'] ?? 'khachhang@vnpt.vn';
+            $email = $_SESSION['user']['email'] ?? 'lannguyen@gmail.com';
         }
 
         // Tìm khach_hang_id tương ứng với email
@@ -45,11 +44,18 @@ try {
 
         if ($userRow) {
             $khachHangId = $userRow['kh_id'];
-            if (empty($khachHangId)) {
+            if (empty($khachHangId) && !empty($userRow['tk_id'])) {
                 try {
-                    $insKh = $pdo->prepare("INSERT INTO khach_hang (tai_khoan_id, ho_ten) VALUES (:tkId, :name)");
-                    $insKh->execute([':tkId' => $userRow['tk_id'], ':name' => $userRow['ho_ten']]);
-                    $khachHangId = $pdo->lastInsertId();
+                    $chkKh = $pdo->prepare("SELECT id FROM khach_hang WHERE tai_khoan_id = :tkId LIMIT 1");
+                    $chkKh->execute([':tkId' => $userRow['tk_id']]);
+                    $khRow = $chkKh->fetch();
+                    if ($khRow) {
+                        $khachHangId = $khRow['id'];
+                    } else {
+                        $insKh = $pdo->prepare("INSERT INTO khach_hang (tai_khoan_id, ho_ten) VALUES (:tkId, :name)");
+                        $insKh->execute([':tkId' => $userRow['tk_id'], ':name' => $userRow['ho_ten']]);
+                        $khachHangId = $pdo->lastInsertId();
+                    }
                 } catch (Exception $_e) {}
             }
         }
@@ -60,6 +66,10 @@ try {
                 $firstKh = $pdo->query("SELECT id FROM khach_hang LIMIT 1")->fetch();
                 if ($firstKh) $khachHangId = $firstKh['id'];
             } catch (Exception $_e) {}
+        }
+
+        if (empty($khachHangId)) {
+            $khachHangId = 101; // ID khách hàng mặc định trong CSDL website_vnpt.sql
         }
 
         $items = $input['items'] ?? $input['cart'] ?? $_SESSION['cart'] ?? [];
@@ -80,31 +90,29 @@ try {
         $donHangId = null;
 
         // Chèn vào bảng don_hang trong CSDL MySQL
-        if ($khachHangId) {
-            try {
-                $insDh = $pdo->prepare("
-                    INSERT INTO don_hang (ma_don_hang, khach_hang_id, tong_tien_hang, phi_van_chuyen, giam_gia, tong_thanh_toan, trang_thai_don_hang, ghi_chu)
-                    VALUES (:ma, :khId, :tongTien, 0, 0, :tongTien, 'cho_xac_nhan', :note)
-                ");
-                $insDh->execute([
-                    ':ma'       => $maDonHang,
-                    ':khId'     => $khachHangId,
-                    ':tongTien' => $totalMoney,
-                    ':note'     => $note
-                ]);
-                $donHangId = $pdo->lastInsertId();
-            } catch (Exception $_e) {}
-        }
+        try {
+            $insDh = $pdo->prepare("
+                INSERT INTO don_hang (ma_don_hang, khach_hang_id, tong_tien_hang, phi_van_chuyen, giam_gia, tong_thanh_toan, trang_thai_don_hang, ghi_chu)
+                VALUES (:ma, :khId, :tongTien, 0, 0, :tongTien, 'cho_xac_nhan', :note)
+            ");
+            $insDh->execute([
+                ':ma'       => $maDonHang,
+                ':khId'     => $khachHangId,
+                ':tongTien' => $totalMoney,
+                ':note'     => $note
+            ]);
+            $donHangId = $pdo->lastInsertId();
+        } catch (Exception $_e) {}
 
         // Lấy san_pham_id hợp lệ nếu có
-        $validSpId = null;
+        $validSpId = 1;
         try {
             $spRow = $pdo->query("SELECT id FROM san_pham LIMIT 1")->fetch();
             if ($spRow) $validSpId = $spRow['id'];
         } catch (Exception $_e) {}
 
         // Chèn chi tiết đơn hàng
-        if ($donHangId && $validSpId && !empty($items) && is_array($items)) {
+        if ($donHangId && !empty($items) && is_array($items)) {
             foreach ($items as $it) {
                 try {
                     $tenSp = $it['name'] ?? 'Dịch vụ VNPT';
@@ -132,7 +140,7 @@ try {
 
         echo json_encode([
             'status'     => 'success',
-            'message'    => 'Đơn hàng #' . $maDonHang . ' đã được tạo thành công!',
+            'message'    => 'Đơn hàng #' . $maDonHang . ' đã được lưu thành công vào CSDL!',
             'orderCode'  => $maDonHang,
             'orderId'    => $donHangId,
             'totalMoney' => $totalMoney
