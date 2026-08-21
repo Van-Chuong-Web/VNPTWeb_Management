@@ -12,7 +12,25 @@ require_once __DIR__ . '/helpers.php';
 
 $currentRole = $_SESSION['admin_user']['ten_vai_tro'] ?? 'nhan_vien';
 $isAdminRole = in_array($currentRole, ['quan_tri_vien', 'superadmin', 'admin']);
-$currentEmpId = $_SESSION['admin_user']['nhan_vien_id'] ?? 0;
+$currentEmpId = (int)($_SESSION['admin_user']['nhan_vien_id'] ?? 0);
+$currentTkId = (int)($_SESSION['admin_user']['id'] ?? $_SESSION['admin_user']['tai_khoan_id'] ?? 0);
+
+if (!$currentEmpId && $currentTkId) {
+    $stmtEmp = $pdo->prepare("SELECT id FROM nhan_vien WHERE tai_khoan_id = :tkid LIMIT 1");
+    $stmtEmp->execute([':tkid' => $currentTkId]);
+    $empRow = $stmtEmp->fetch();
+    if ($empRow) {
+        $currentEmpId = (int)$empRow['id'];
+        $_SESSION['admin_user']['nhan_vien_id'] = $currentEmpId;
+    }
+}
+
+// Xóa các thông báo tự gửi cho chính mình bị dính dữ liệu cũ
+if ($currentEmpId > 0 && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    try {
+        $pdo->exec("DELETE FROM thong_bao_nhan_vien WHERE nhan_vien_id = $currentEmpId AND (nguoi_gui_id = $currentEmpId OR nguoi_gui_id IS NULL)");
+    } catch (Exception $_e) {}
+}
 
 $msg = '';
 $msgType = 'success';
@@ -74,21 +92,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $ids = [$recvId];
                 } else {
                     // Loại trừ chính tài khoản Admin gửi thông báo
-                    $stmtIds = $pdo->prepare("SELECT id FROM nhan_vien WHERE id != :senderId");
-                    $stmtIds->execute([':senderId' => $currentEmpId]);
+                    if ($currentEmpId > 0) {
+                        $stmtIds = $pdo->prepare("SELECT id FROM nhan_vien WHERE id != :senderId");
+                        $stmtIds->execute([':senderId' => $currentEmpId]);
+                    } else {
+                        $stmtIds = $pdo->query("SELECT id FROM nhan_vien");
+                    }
                     $ids = $stmtIds->fetchAll(PDO::FETCH_COLUMN);
                 }
 
                 $stmt = $pdo->prepare(
-                    "INSERT INTO thong_bao_nhan_vien (nhan_vien_id, tieu_de, noi_dung) VALUES (:nvid, :td, :nd)"
+                    "INSERT INTO thong_bao_nhan_vien (nhan_vien_id, nguoi_gui_id, tieu_de, noi_dung) VALUES (:nvid, :ngid, :td, :nd)"
                 );
+                $sentCount = 0;
                 foreach ($ids as $nvid) {
-                    if ((int)$nvid === (int)$currentEmpId && $mode !== 'single') continue; // Đảm bảo không gửi cho chính mình
-                    $stmt->execute([':nvid' => $nvid, ':td' => $tieuDe, ':nd' => $noiDung]);
+                    if ($currentEmpId > 0 && (int)$nvid === (int)$currentEmpId && $mode !== 'single') {
+                        continue; // Đảm bảo không bao giờ tự gửi cho chính mình
+                    }
+                    $stmt->execute([
+                        ':nvid' => $nvid,
+                        ':ngid' => $currentEmpId ?: null,
+                        ':td'   => $tieuDe,
+                        ':nd'   => $noiDung
+                    ]);
+                    $sentCount++;
                 }
 
-                logActivity($pdo, "Đã gửi thông báo '$tieuDe' tới " . count($ids) . " nhân viên");
-                $msg = "✅ Đã gửi thông báo tới <strong>" . count($ids) . "</strong> nhân viên!";
+                logActivity($pdo, "Đã gửi thông báo '$tieuDe' tới $sentCount nhân viên");
+                $msg = "✅ Đã gửi thông báo tới <strong>$sentCount</strong> nhân viên!";
                 $activeTab = 'nhan_vien';
             } catch (PDOException $e) {
                 $msg = 'Lỗi: ' . $e->getMessage();
