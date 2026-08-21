@@ -167,6 +167,9 @@ if (isset($_SESSION['admin_user']['email']) && !empty($_SESSION['admin_user']['e
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-lock text-muted"></i></span>
                         <input type="password" id="newPassInput" class="form-control border-start-0" placeholder="••••••••" minlength="6" required>
+                        <button type="button" class="btn btn-outline-secondary toggle-pwd" data-target="newPassInput" aria-label="Hiện/Ẩn mật khẩu">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
                     </div>
                 </div>
                 <div class="mb-4">
@@ -174,6 +177,9 @@ if (isset($_SESSION['admin_user']['email']) && !empty($_SESSION['admin_user']['e
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-lock text-muted"></i></span>
                         <input type="password" id="confirmPassInput" class="form-control border-start-0" placeholder="••••••••" minlength="6" required>
+                        <button type="button" class="btn btn-outline-secondary toggle-pwd" data-target="confirmPassInput" aria-label="Hiện/Ẩn mật khẩu">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
                     </div>
                 </div>
                 <button type="submit" id="btnResetPass" class="btn btn-success w-100 fw-bold py-2 mb-3" style="border-radius: 8px;">
@@ -335,6 +341,22 @@ async function handleResetPass() {
         btn.innerHTML = '<i class="fa-solid fa-check-circle me-1"></i> Lưu Mật Khẩu Mới';
     }
 }
+
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.toggle-pwd');
+    if (!btn) return;
+    e.preventDefault();
+    const targetId = btn.getAttribute('data-target');
+    const input = document.getElementById(targetId);
+    if (input) {
+        const isPw = input.type === 'password';
+        input.type = isPw ? 'text' : 'password';
+        const icon = btn.querySelector('i');
+        if (icon) {
+            icon.className = isPw ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+        }
+    }
+});
 </script>
 </body>
 </html>

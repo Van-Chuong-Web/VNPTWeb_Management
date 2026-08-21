@@ -364,6 +364,9 @@
           <div class="auth-input-wrap">
             <i data-lucide="lock"></i>
             <input type="password" id="fgNewPassword" placeholder="Nhập mật khẩu mới" minlength="6" required />
+            <button type="button" class="toggle-pw" data-target="fgNewPassword" aria-label="Hiện/ẩn mật khẩu">
+              <i class="fa-solid fa-eye text-muted" style="font-size:13px;"></i>
+            </button>
           </div>
         </div>
         <div class="auth-field">
@@ -371,6 +374,9 @@
           <div class="auth-input-wrap">
             <i data-lucide="lock"></i>
             <input type="password" id="fgConfirmPassword" placeholder="Nhập lại mật khẩu mới" minlength="6" required />
+            <button type="button" class="toggle-pw" data-target="fgConfirmPassword" aria-label="Hiện/ẩn mật khẩu">
+              <i class="fa-solid fa-eye text-muted" style="font-size:13px;"></i>
+            </button>
           </div>
         </div>
         <div class="auth-error-box" id="fgError3" style="display:none"></div>
