@@ -82,10 +82,10 @@
   function isStaffAccount(u) {
     if (!u) return false;
     const email = (u.email || '').toLowerCase();
-    const rawRole = u.role || u.ten_vai_tro || '';
+    const rawRole = (u.role || u.ten_vai_tro || '').toLowerCase();
     return (u.loai_tai_khoan === 'nhan_vien') || 
            email.endsWith('@vnpt.vn') || email.includes('admin') || email.includes('editor') || email.includes('manager') ||
-           ['admin', 'quan_tri_vien', 'bien_tap_vien', 'nhan_vien_ban_hang', 'quan_ly', 'editor', 'staff'].includes(rawRole);
+           ['admin', 'quan_tri_vien', 'superadmin', 'bien_tap_vien', 'nhan_vien_ban_hang', 'quan_ly', 'editor', 'staff'].includes(rawRole);
   }
 
   /* ------------------------------------------------------------
@@ -138,7 +138,7 @@
     const fn = getFirstName(user);
     const ln = getLastName(user);
     const ph = getPhone(user);
-    const isStaffAcc = !!(user && (user.loai_tai_khoan === 'nhan_vien' || ['admin', 'quan_tri_vien', 'bien_tap_vien', 'nhan_vien_ban_hang', 'quan_ly', 'editor', 'staff'].includes((user.role || user.ten_vai_tro || '').toLowerCase())));
+    const isStaffAcc = isStaffAccount(user);
     const avatarPath = user.hinh_anh_url || user.avatar || '';
     const avatarSrc = avatarPath ? (avatarPath.startsWith('http') || avatarPath.startsWith('data:') ? avatarPath : avatarPath.replace(/^(\.\.\/|\/)+/, '')) : '';
 
@@ -475,7 +475,8 @@
    * 3) CÀI ĐẶT
    * ------------------------------------------------------------ */
   function renderSettings(user) {
-    const roleLabel = (user.role === 'admin' || user.loai_tai_khoan === 'nhan_vien') ? 'Quản trị viên' : 'Khách hàng';
+    const isStaff = isStaffAccount(user);
+    const roleLabel = user.ten_vai_tro || (isStaff ? 'Quản trị viên' : 'Khách hàng');
     const body = `
       <div class="acct-grid">
         ${sideNavHtml('settings', user)}

@@ -119,6 +119,7 @@ try {
         'phone'         => $userRow['kh_sdt'] ?? '',
         'so_dien_thoai' => $userRow['kh_sdt'] ?? '',
         'role'          => $userRow['loai_tai_khoan'] === 'nhan_vien' ? 'admin' : 'customer',
+        'ten_vai_tro'   => $userRow['loai_tai_khoan'] === 'nhan_vien' ? 'Quản trị viên' : 'Khách hàng',
         'loai_tai_khoan'=> $userRow['loai_tai_khoan'],
         'avatar'        => $userRow['hinh_anh_url'] ?? '',
         'hinh_anh_url'  => $userRow['hinh_anh_url'] ?? ''
