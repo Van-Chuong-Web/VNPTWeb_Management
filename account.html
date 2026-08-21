@@ -118,15 +118,24 @@
         <form id="acctPasswordForm">
           <div class="form-group">
             <label class="form-label">Mật khẩu hiện tại</label>
-            <input type="password" id="acctCurrentPass" class="form-control" required />
+            <div style="position:relative;">
+              <input type="password" id="acctCurrentPass" class="form-control" required style="padding-right:40px;" />
+              <button type="button" class="toggle-pw" data-target="acctCurrentPass" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:#64748B; cursor:pointer; font-size:1rem; padding:4px;"><i class="fa-solid fa-eye"></i></button>
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">Mật khẩu mới</label>
-            <input type="password" id="acctNewPass" class="form-control" required />
+            <div style="position:relative;">
+              <input type="password" id="acctNewPass" class="form-control" minlength="6" required style="padding-right:40px;" />
+              <button type="button" class="toggle-pw" data-target="acctNewPass" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:#64748B; cursor:pointer; font-size:1rem; padding:4px;"><i class="fa-solid fa-eye"></i></button>
+            </div>
           </div>
           <div class="form-group">
             <label class="form-label">Xác nhận mật khẩu mới</label>
-            <input type="password" id="acctConfirmPass" class="form-control" required />
+            <div style="position:relative;">
+              <input type="password" id="acctConfirmPass" class="form-control" minlength="6" required style="padding-right:40px;" />
+              <button type="button" class="toggle-pw" data-target="acctConfirmPass" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:#64748B; cursor:pointer; font-size:1rem; padding:4px;"><i class="fa-solid fa-eye"></i></button>
+            </div>
           </div>
           <button type="submit" class="btn-save-profile">Cập nhật mật khẩu mới</button>
         </form>

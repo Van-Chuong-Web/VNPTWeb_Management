@@ -454,23 +454,26 @@
               <div class="acct-form-grid">
                 <div class="auth-field full">
                   <label>Mật khẩu hiện tại</label>
-                  <div class="auth-input-wrap">
+                  <div class="auth-input-wrap" style="position:relative;">
                     <i data-lucide="lock"></i>
-                    <input type="password" id="acctCurrentPw" required placeholder="••••••••">
+                    <input type="password" id="acctCurrentPw" required placeholder="••••••••" style="padding-right:40px;">
+                    <button type="button" class="toggle-pw" data-target="acctCurrentPw" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:#64748B; cursor:pointer; font-size:1rem; padding:4px; z-index:2;"><i class="fa-solid fa-eye"></i></button>
                   </div>
                 </div>
                 <div class="auth-field">
                   <label>Mật khẩu mới</label>
-                  <div class="auth-input-wrap">
+                  <div class="auth-input-wrap" style="position:relative;">
                     <i data-lucide="lock"></i>
-                    <input type="password" id="acctNewPw" minlength="8" required placeholder="Tối thiểu 8 ký tự">
+                    <input type="password" id="acctNewPw" minlength="6" required placeholder="Tối thiểu 6 ký tự" style="padding-right:40px;">
+                    <button type="button" class="toggle-pw" data-target="acctNewPw" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:#64748B; cursor:pointer; font-size:1rem; padding:4px; z-index:2;"><i class="fa-solid fa-eye"></i></button>
                   </div>
                 </div>
                 <div class="auth-field">
                   <label>Xác nhận mật khẩu mới</label>
-                  <div class="auth-input-wrap">
+                  <div class="auth-input-wrap" style="position:relative;">
                     <i data-lucide="lock"></i>
-                    <input type="password" id="acctConfirmPw" minlength="8" required placeholder="Nhập lại mật khẩu mới">
+                    <input type="password" id="acctConfirmPw" minlength="6" required placeholder="Nhập lại mật khẩu mới" style="padding-right:40px;">
+                    <button type="button" class="toggle-pw" data-target="acctConfirmPw" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:#64748B; cursor:pointer; font-size:1rem; padding:4px; z-index:2;"><i class="fa-solid fa-eye"></i></button>
                   </div>
                 </div>
               </div>
@@ -516,18 +519,36 @@
       const next    = document.getElementById('acctNewPw')?.value || '';
       const confirm = document.getElementById('acctConfirmPw')?.value || '';
 
-      if (next.length < 8) { showAlert(alertBox, 'error', 'Mật khẩu mới tối thiểu 8 ký tự.'); return; }
+      if (next.length < 6) { showAlert(alertBox, 'error', 'Mật khẩu mới tối thiểu 6 ký tự.'); return; }
       if (next !== confirm) { showAlert(alertBox, 'error', 'Mật khẩu xác nhận không khớp.'); return; }
 
       const submitBtn = document.getElementById('acctPwSubmit');
-      submitBtn.disabled = true;
+      if (submitBtn) submitBtn.disabled = true;
+
       try {
-        showAlert(alertBox, 'success', 'Đổi mật khẩu thành công!');
-        form.reset();
+        const changePwUrl = (typeof window.getApiPath === 'function') ? window.getApiPath('backend/api/change_password.php') : 'backend/api/change_password.php';
+        const res = await fetch(changePwUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: user.email,
+            currentPassword: current,
+            newPassword: next
+          })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.status === 'success') {
+          showAlert(alertBox, 'success', data.message || 'Đổi mật khẩu thành công!');
+          if (typeof showToast === 'function') showToast('🔑 ' + (data.message || 'Đổi mật khẩu thành công!'));
+          form.reset();
+        } else {
+          showAlert(alertBox, 'error', data.error || data.message || 'Không thể đổi mật khẩu. Vui lòng thử lại.');
+        }
       } catch (err) {
-        showAlert(alertBox, 'error', err.message || 'Không thể đổi mật khẩu. Vui lòng thử lại.');
+        showAlert(alertBox, 'error', 'Lỗi kết nối CSDL: ' + (err.message || 'Vui lòng thử lại sau.'));
       } finally {
-        submitBtn.disabled = false;
+        if (submitBtn) submitBtn.disabled = false;
       }
     });
   }
