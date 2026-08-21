@@ -216,6 +216,9 @@ window.closeAllAuthModals = function() {
     const overlayEl = getModalOverlay();
     if (!modalEl) return;
 
+    // Xóa ngay bất kỳ Toast thông báo đỏ nào đang lấp ló dưới chân Modal
+    document.querySelectorAll('.toast').forEach(t => t.remove());
+
     modalEl.style.removeProperty('display');
     modalEl.style.removeProperty('opacity');
     modalEl.style.removeProperty('visibility');

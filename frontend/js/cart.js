@@ -353,7 +353,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!isLoggedIn) {
             closeCart();
             const msg = '⚠️ Vui lòng <strong>Đăng nhập</strong> hoặc <strong>Đăng ký</strong> tài khoản để tiếp tục đăng ký dịch vụ!';
-            safeShowToast('⚠️ Vui lòng đăng nhập để đăng ký mua sản phẩm!', true);
             if (typeof window.openLoginModal === 'function') {
                 window.openLoginModal(msg);
             } else {
@@ -466,7 +465,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!isLoggedIn) {
                 closeCart();
                 const msg = '⚠️ Vui lòng <strong>Đăng nhập</strong> hoặc <strong>Đăng ký</strong> tài khoản để tiến hành thanh toán dịch vụ!';
-                safeShowToast('⚠️ Vui lòng đăng nhập để tiến hành thanh toán!', true);
                 if (typeof window.openLoginModal === 'function') {
                     window.openLoginModal(msg);
                 } else {
