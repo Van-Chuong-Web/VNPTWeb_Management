@@ -94,9 +94,9 @@
     return `
       <div class="acct-side">
         <div class="acct-side-user">
-          <div class="acct-side-avatar">
-            ${avatarSrc ? `<img src="${avatarSrc}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="Avatar" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';">` : ''}
-            <span style="display:${avatarSrc ? 'none' : 'flex'}; width:100%; height:100%; border-radius:50%; background:linear-gradient(135deg,#0066CC,#00AAFF); color:white; font-weight:800; font-size:1.4rem; align-items:center; justify-content:center;">${initialsOf(user)}</span>
+          <div class="acct-side-avatar" style="position:relative; width:60px; height:60px; border-radius:50%; overflow:hidden; background:linear-gradient(135deg,#0066CC,#00AAFF); display:flex; align-items:center; justify-content:center; color:white; font-weight:800; font-size:1.3rem; flex-shrink:0;">
+            <span style="display:flex; width:100%; height:100%; align-items:center; justify-content:center;">${initialsOf(user)}</span>
+            ${avatarSrc ? `<img src="${avatarSrc}" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; border-radius:50%;" alt="Avatar" onerror="this.style.display='none';">` : ''}
           </div>
           <div>
             <div class="name">${escapeHtml(fullNameOf(user))}</div>
@@ -140,8 +140,8 @@
 
             <div style="display:flex; align-items:center; gap:20px; margin-bottom:24px; padding-bottom:20px; border-bottom:1.5px solid #F1F5F9;">
               <div style="position:relative; width:90px; height:90px; border-radius:50%; overflow:hidden; border:3px solid #0066CC; box-shadow:0 4px 14px rgba(0,102,204,0.2); background:linear-gradient(135deg,#0066CC,#00AAFF); display:flex; align-items:center; justify-content:center; color:white; font-size:1.8rem; font-weight:800; flex-shrink:0;">
-                <img id="acctAvatarPreview" src="${avatarSrc}" style="width:100%; height:100%; object-fit:cover; object-position:center; border-radius:50%; aspect-ratio:1/1; display:${avatarSrc ? 'block' : 'none'};" onerror="this.style.display='none'; document.getElementById('acctAvatarInitials').style.display='block';">
-                <span id="acctAvatarInitials" style="display:${avatarSrc ? 'none' : 'block'};">${initialsOf(user)}</span>
+                <span id="acctAvatarInitials">${initialsOf(user)}</span>
+                <img id="acctAvatarPreview" src="${avatarSrc}" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; object-position:center; border-radius:50%; aspect-ratio:1/1; display:${avatarSrc ? 'block' : 'none'};" onerror="this.style.display='none';">
               </div>
               <div>
                 <h4 style="margin:0 0 6px 0; font-size:1rem; font-weight:800; color:#0F172A;">Ảnh Đại Diện Tài Khoản</h4>
