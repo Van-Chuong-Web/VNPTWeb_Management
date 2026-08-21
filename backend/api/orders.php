@@ -1,6 +1,6 @@
 <?php
 /**
- * backend/api/orders.php — API Đơn hàng & Thanh toán 100% CSDL MySQL (Tối ưu tuyệt đối)
+ * backend/api/orders.php — API Tạo & Lưu Đơn hàng 100% CSDL MySQL
  */
 
 header('Content-Type: application/json; charset=utf-8');
@@ -11,6 +11,45 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/../../admin_panel/db.php';
 
+function resolveKhachHangId($pdo, $email) {
+    if (empty($email)) $email = $_SESSION['user']['email'] ?? 'lannguyen@gmail.com';
+    $email = strtolower(trim($email));
+    $vnvdEmail = str_replace('@vnpt.vn', '@vnvd.vn', $email);
+
+    try {
+        $stmt = $pdo->prepare("
+            SELECT kh.id AS kh_id, tk.id AS tk_id, COALESCE(kh.ho_ten, tk.email) AS ho_ten
+            FROM tai_khoan tk
+            LEFT JOIN khach_hang kh ON kh.tai_khoan_id = tk.id
+            WHERE LOWER(tk.email) = :email OR LOWER(tk.email) = :vnvd_email
+            LIMIT 1
+        ");
+        $stmt->execute([':email' => $email, ':vnvd_email' => $vnvdEmail]);
+        $row = $stmt->fetch();
+
+        if ($row) {
+            if (!empty($row['kh_id'])) {
+                return $row['kh_id'];
+            }
+            if (!empty($row['tk_id'])) {
+                try {
+                    $ins = $pdo->prepare("INSERT INTO khach_hang (tai_khoan_id, ho_ten) VALUES (:tkId, :name)");
+                    $ins->execute([':tkId' => $row['tk_id'], ':name' => $row['ho_ten']]);
+                    $newId = $pdo->lastInsertId();
+                    if ($newId) return $newId;
+                } catch (Exception $_e) {}
+            }
+        }
+    } catch (Exception $_e) {}
+
+    try {
+        $first = $pdo->query("SELECT id FROM khach_hang ORDER BY id ASC LIMIT 1")->fetch();
+        if ($first && !empty($first['id'])) return $first['id'];
+    } catch (Exception $_e) {}
+
+    return 101;
+}
+
 try {
     $rawInput = json_decode(file_get_contents('php://input'), true);
     $input = !empty($rawInput) ? array_merge($_POST, $rawInput) : $_POST;
@@ -18,59 +57,8 @@ try {
     $method = $_SERVER['REQUEST_METHOD'];
     $email  = strtolower(trim($input['email'] ?? $_GET['email'] ?? $_SESSION['user']['email'] ?? ''));
 
-    // 1. Xử lý tạo đơn hàng (POST)
     if ($method === 'POST' || isset($input['items']) || isset($input['cart']) || isset($input['ma_don_hang'])) {
-        if (empty($email)) {
-            $email = $_SESSION['user']['email'] ?? 'lannguyen@gmail.com';
-        }
-
-        // Tìm khach_hang_id tương ứng với email
-        $khachHangId = null;
-        $userRow = null;
-        try {
-            $vnvdEmail = str_replace('@vnpt.vn', '@vnvd.vn', $email);
-            $stmtKh = $pdo->prepare("
-                SELECT kh.id AS kh_id, tk.id AS tk_id, tk.email,
-                       COALESCE(kh.ho_ten, nv.ho_ten, tk.email) AS ho_ten
-                FROM tai_khoan tk
-                LEFT JOIN khach_hang kh ON kh.tai_khoan_id = tk.id
-                LEFT JOIN nhan_vien nv ON nv.tai_khoan_id = tk.id
-                WHERE LOWER(tk.email) = :email OR LOWER(tk.email) = :vnvd_email
-                LIMIT 1
-            ");
-            $stmtKh->execute([':email' => $email, ':vnvd_email' => $vnvdEmail]);
-            $userRow = $stmtKh->fetch();
-        } catch (Exception $_e) {}
-
-        if ($userRow) {
-            $khachHangId = $userRow['kh_id'];
-            if (empty($khachHangId) && !empty($userRow['tk_id'])) {
-                try {
-                    $chkKh = $pdo->prepare("SELECT id FROM khach_hang WHERE tai_khoan_id = :tkId LIMIT 1");
-                    $chkKh->execute([':tkId' => $userRow['tk_id']]);
-                    $khRow = $chkKh->fetch();
-                    if ($khRow) {
-                        $khachHangId = $khRow['id'];
-                    } else {
-                        $insKh = $pdo->prepare("INSERT INTO khach_hang (tai_khoan_id, ho_ten) VALUES (:tkId, :name)");
-                        $insKh->execute([':tkId' => $userRow['tk_id'], ':name' => $userRow['ho_ten']]);
-                        $khachHangId = $pdo->lastInsertId();
-                    }
-                } catch (Exception $_e) {}
-            }
-        }
-
-        // Fallback khach_hang_id từ CSDL nếu chưa có
-        if (empty($khachHangId)) {
-            try {
-                $firstKh = $pdo->query("SELECT id FROM khach_hang LIMIT 1")->fetch();
-                if ($firstKh) $khachHangId = $firstKh['id'];
-            } catch (Exception $_e) {}
-        }
-
-        if (empty($khachHangId)) {
-            $khachHangId = 101; // ID khách hàng mặc định trong CSDL website_vnpt.sql
-        }
+        $khachHangId = resolveKhachHangId($pdo, $email);
 
         $items = $input['items'] ?? $input['cart'] ?? $_SESSION['cart'] ?? [];
         $totalMoney = floatval($input['totalMoney'] ?? $input['tong_tien'] ?? 0);
@@ -81,7 +69,7 @@ try {
             $maDonHang = 'DH' . date('Ymd') . rand(1000, 9999);
         }
 
-        if ($totalMoney <= 0 && !empty($items)) {
+        if ($totalMoney <= 0 && !empty($items) && is_array($items)) {
             foreach ($items as $it) {
                 $totalMoney += floatval($it['price'] ?? 0) * intval($it['qty'] ?? 1);
             }
@@ -89,7 +77,7 @@ try {
 
         $donHangId = null;
 
-        // Chèn vào bảng don_hang trong CSDL MySQL
+        // Chèn trực tiếp vào bảng don_hang trong CSDL MySQL
         try {
             $insDh = $pdo->prepare("
                 INSERT INTO don_hang (ma_don_hang, khach_hang_id, tong_tien_hang, phi_van_chuyen, giam_gia, tong_thanh_toan, trang_thai_don_hang, ghi_chu)
@@ -104,14 +92,14 @@ try {
             $donHangId = $pdo->lastInsertId();
         } catch (Exception $_e) {}
 
-        // Lấy san_pham_id hợp lệ nếu có
+        // Lấy san_pham_id hợp lệ
         $validSpId = 1;
         try {
             $spRow = $pdo->query("SELECT id FROM san_pham LIMIT 1")->fetch();
-            if ($spRow) $validSpId = $spRow['id'];
+            if ($spRow && !empty($spRow['id'])) $validSpId = $spRow['id'];
         } catch (Exception $_e) {}
 
-        // Chèn chi tiết đơn hàng
+        // Chèn chi tiết mặt hàng vào bảng don_hang_chi_tiet
         if ($donHangId && !empty($items) && is_array($items)) {
             foreach ($items as $it) {
                 try {
@@ -135,7 +123,7 @@ try {
             }
         }
 
-        // Clear session cart
+        // Xóa giỏ hàng session
         $_SESSION['cart'] = [];
 
         echo json_encode([
@@ -148,24 +136,17 @@ try {
         exit;
     }
 
-    // 2. Lấy danh sách đơn hàng của người dùng (GET)
-    $orders = [];
-    if (!empty($email)) {
-        try {
-            $stmtOrders = $pdo->prepare("
-                SELECT dh.*,
-                       (SELECT COUNT(*) FROM don_hang_chi_tiet ct WHERE ct.don_hang_id = dh.id) AS so_luong_san_pham
-                FROM don_hang dh
-                JOIN khach_hang kh ON kh.id = dh.khach_hang_id
-                JOIN tai_khoan tk ON tk.id = kh.tai_khoan_id
-                WHERE LOWER(tk.email) = :email OR LOWER(tk.email) = :vnvd_email
-                ORDER BY dh.id DESC
-            ");
-            $vnvdEmail = str_replace('@vnpt.vn', '@vnvd.vn', $email);
-            $stmtOrders->execute([':email' => $email, ':vnvd_email' => $vnvdEmail]);
-            $orders = $stmtOrders->fetchAll() ?: [];
-        } catch (Exception $_e) {}
-    }
+    // GET: Lấy danh sách đơn hàng
+    $khachHangId = resolveKhachHangId($pdo, $email);
+    $stmtOrders = $pdo->prepare("
+        SELECT dh.*,
+               (SELECT COUNT(*) FROM don_hang_chi_tiet ct WHERE ct.don_hang_id = dh.id) AS so_luong_san_pham
+        FROM don_hang dh
+        WHERE dh.khach_hang_id = :khId
+        ORDER BY dh.id DESC
+    ");
+    $stmtOrders->execute([':khId' => $khachHangId]);
+    $orders = $stmtOrders->fetchAll() ?: [];
 
     echo json_encode([
         'status' => 'success',

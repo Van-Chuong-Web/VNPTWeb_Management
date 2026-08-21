@@ -602,5 +602,15 @@
         window.VNPTRouter.goHome();
       }
     });
+
+    document.addEventListener('vnpt:ordercreated', () => {
+      const user = getUser();
+      if (user) {
+        const listEl = document.getElementById('acctOrdersList');
+        if (listEl) {
+          renderOrders(user);
+        }
+      }
+    });
   });
 })();

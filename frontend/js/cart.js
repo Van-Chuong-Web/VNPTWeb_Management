@@ -444,11 +444,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    let lastCheckoutItems = [];
+
     function openCheckoutInvoiceModal() {
         const modalBody = document.getElementById('checkoutModalBody');
         if (!modalBody) return;
 
-        const user = window.VNPTAuth ? window.VNPTAuth.getCurrentUser() : {};
+        lastCheckoutItems = [...currentCartItems];
+        const user = (window.VNPTAuth && typeof window.VNPTAuth.getCurrentUser === 'function' && window.VNPTAuth.getCurrentUser()) ||
+                     JSON.parse(localStorage.getItem('vnpt_user') || sessionStorage.getItem('vnpt_user') || '{}');
         const orderCode = 'DH' + Date.now().toString().slice(-6);
         const totalMoney = currentCartItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
         const formattedTotal = new Intl.NumberFormat('vi-VN').format(totalMoney) + ' ₫';
@@ -457,7 +461,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const qrUrl = `https://img.vietqr.io/image/970436-1012345678-compact2.png?amount=${totalMoney}&addInfo=${orderCode}&accountName=CONG%20TY%20DIGISERVICE%20VNPT`;
 
         const userName = `${user.firstName || user.ho_ten || 'Khách hàng'} ${user.lastName || ''}`.trim();
-        const userEmail = user.email || 'khachhang@vnpt.vn';
+        const userEmail = user.email || 'lannguyen@gmail.com';
         const userPhone = user.phone || user.so_dien_thoai || '0901 234 567';
 
         modalBody.innerHTML = `
@@ -607,23 +611,33 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     window.VNPTConfirmPayment = async function(orderCode, totalFormatted) {
+        const user = (window.VNPTAuth && typeof window.VNPTAuth.getCurrentUser === 'function' && window.VNPTAuth.getCurrentUser()) ||
+                     JSON.parse(localStorage.getItem('vnpt_user') || sessionStorage.getItem('vnpt_user') || '{}');
+        const userEmail = user.email || 'lannguyen@gmail.com';
+        const itemsToPay = (lastCheckoutItems && lastCheckoutItems.length) ? lastCheckoutItems : currentCartItems;
+        const totalAmount = itemsToPay.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0);
+
         try {
-            const user = window.VNPTAuth ? window.VNPTAuth.getCurrentUser() : null;
             const ordersUrl = (typeof window.getApiPath === 'function') ? window.getApiPath('backend/api/orders.php') : 'backend/api/orders.php';
             await fetch(ordersUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    email: user ? user.email : '',
+                    email: userEmail,
                     ma_don_hang: orderCode,
-                    items: currentCartItems,
-                    totalMoney: currentCartItems.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0),
+                    items: itemsToPay,
+                    totalMoney: totalAmount,
                     note: 'Thanh toán đơn hàng #' + orderCode
                 })
             });
         } catch (_err) {}
 
-        markProductsAsPurchased(currentCartItems);
+        markProductsAsPurchased(itemsToPay);
+
+        // Xóa giỏ hàng sau khi đặt thành công
+        localStorage.removeItem('vnpt_cart');
+        currentCartItems = [];
+        renderCart([]);
 
         if (checkoutModal) checkoutModal.classList.remove('open');
 
@@ -639,7 +653,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (paymentSuccessModal) paymentSuccessModal.classList.add('open');
         showToast('Thanh toán thành công! Mã đơn: #' + orderCode);
-        fetchCart();
+
+        // Báo cho giao diện "Đơn hàng của tôi" tự động nạp lại dữ liệu đơn hàng mới từ MySQL
+        document.dispatchEvent(new CustomEvent('vnpt:ordercreated'));
     };
 
     function resetCart() {
