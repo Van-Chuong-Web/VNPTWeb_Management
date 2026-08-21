@@ -1350,6 +1350,21 @@
         const submitBtn = document.getElementById('btnSubmitContactForm');
         const origBtnHtml = submitBtn ? submitBtn.innerHTML : 'Gửi Yêu Cầu';
 
+        const phoneVal = (form.querySelector('[name="phone"], #contactPhonePage')?.value || '').trim().replace(/\s+/g, '');
+        const emailVal = (form.querySelector('[name="email"], #contactEmailPage')?.value || '').trim();
+
+        if (phoneVal && !/^(0|\+84)(3|5|7|8|9)[0-9]{8}$/.test(phoneVal)) {
+          if (window.showToast) window.showToast('⚠️ Số điện thoại không hợp lệ! (10 chữ số, bắt đầu 03, 05, 07, 08, 09)', true);
+          else alert('⚠️ Số điện thoại không hợp lệ! (10 chữ số, bắt đầu 03, 05, 07, 08, 09)');
+          return;
+        }
+
+        if (emailVal && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(emailVal)) {
+          if (window.showToast) window.showToast('⚠️ Địa chỉ Email không hợp lệ! (ví dụ: contact@company.vn)', true);
+          else alert('⚠️ Địa chỉ Email không hợp lệ! (ví dụ: contact@company.vn)');
+          return;
+        }
+
         if (submitBtn) {
           submitBtn.disabled = true;
           submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang gửi...';

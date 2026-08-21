@@ -21,6 +21,23 @@ try {
         exit();
     }
 
+    $cleanPhone = preg_replace('/\s+/', '', $phone);
+    if (!preg_match('/^(0|\+84)(3|5|7|8|9)[0-9]{8}$/', $cleanPhone)) {
+        echo json_encode([
+            'status' => 'error',
+            'message' => '⚠️ Số điện thoại không hợp lệ! Vui lòng nhập số chuẩn (10 chữ số, bắt đầu bằng 03, 05, 07, 08, 09 hoặc +84).'
+        ], JSON_UNESCAPED_UNICODE);
+        exit();
+    }
+
+    if (!empty($email) && (!filter_var($email, FILTER_VALIDATE_EMAIL) || !preg_match('/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/', $email))) {
+        echo json_encode([
+            'status' => 'error',
+            'message' => '⚠️ Địa chỉ Email không hợp lệ! Vui lòng nhập đúng định dạng (ví dụ: contact@company.vn).'
+        ], JSON_UNESCAPED_UNICODE);
+        exit();
+    }
+
     // 1. Kiểm tra ID khách hàng từ Session hoặc tìm khách hàng sẵn có trong CSDL (KHÔNG TỰ TẠO TÀI KHOẢN MỚI)
     $khachHangId = $_SESSION['user']['khach_hang_id'] ?? null;
 

@@ -837,12 +837,12 @@ function getDynamicProductUI($product) {
           </div>
           <div class="form-group">
             <label>Số điện thoại</label>
-            <input type="tel" id="bottomContactPhone" placeholder="0901 234 567" required />
+            <input type="tel" id="bottomContactPhone" placeholder="0901234567" required pattern="(0|\+84)[35789][0-9]{8}" title="Vui lòng nhập số điện thoại hợp lệ (10 chữ số, bắt đầu bằng 03, 05, 07, 08, 09 hoặc +84)" />
           </div>
         </div>
         <div class="form-group">
           <label>Email doanh nghiệp</label>
-          <input type="email" id="bottomContactEmail" placeholder="contact@company.vn" required />
+          <input type="email" id="bottomContactEmail" placeholder="contact@company.vn" pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" title="Vui lòng nhập đúng định dạng Email hợp lệ (ví dụ: contact@company.vn)" />
         </div>
         <div class="form-group">
           <label>Dịch vụ quan tâm</label>

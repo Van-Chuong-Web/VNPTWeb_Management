@@ -723,7 +723,7 @@
 
       <div style="margin-bottom: 14px;">
         <label style="font-size: 0.85rem; font-weight: 700; color: #334155; display: block; margin-bottom: 6px;">Số điện thoại liên hệ</label>
-        <input type="tel" id="consultPhone" placeholder="0901 234 567" required style="width: 100%; padding: 12px 14px; border: 1.5px solid #CBD5E1; border-radius: 10px; font-size: 0.95rem; color: #0F172A;">
+        <input type="tel" id="consultPhone" placeholder="0901234567" required pattern="(0|\+84)[35789][0-9]{8}" title="Vui lòng nhập số điện thoại hợp lệ (10 chữ số, bắt đầu bằng 03, 05, 07, 08, 09 hoặc +84)" style="width: 100%; padding: 12px 14px; border: 1.5px solid #CBD5E1; border-radius: 10px; font-size: 0.95rem; color: #0F172A;">
       </div>
 
       <div style="margin-bottom: 20px;">

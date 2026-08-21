@@ -547,6 +547,9 @@
 
     closeConsultationModal?.addEventListener('click', closeConsultation);
 
+    const vnptPhoneRegex = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
+    const vnptEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
     consultationForm?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = document.getElementById('consultName')?.value.trim();
@@ -555,7 +558,21 @@
       const service = document.getElementById('consultService')?.value;
       const message = document.getElementById('consultMessage')?.value.trim();
 
-      if (!name || !phone) return;
+      if (!name || !phone) {
+        if (window.showToast) window.showToast('Vui lòng điền đầy đủ Họ tên và Số điện thoại!', true);
+        return;
+      }
+
+      const cleanPhone = phone.replace(/\s+/g, '');
+      if (!vnptPhoneRegex.test(cleanPhone)) {
+        if (window.showToast) window.showToast('⚠️ Số điện thoại không hợp lệ! (10 chữ số, bắt đầu 03, 05, 07, 08, 09)', true);
+        return;
+      }
+
+      if (email && !vnptEmailRegex.test(email)) {
+        if (window.showToast) window.showToast('⚠️ Địa chỉ Email không hợp lệ! (ví dụ: contact@company.vn)', true);
+        return;
+      }
 
       const formData = new FormData();
       formData.append('name', name);
@@ -572,6 +589,11 @@
           body: formData
         });
         const data = await res.json();
+
+        if (data.status === 'error') {
+          if (window.showToast) window.showToast(data.message || 'Lỗi gửi yêu cầu!', true);
+          return;
+        }
 
         const toast = document.getElementById('toast');
         const toastMsg = document.getElementById('toastMsg');
@@ -603,7 +625,21 @@
       const service = document.getElementById('bottomContactService')?.value;
       const message = document.getElementById('bottomContactMessage')?.value.trim();
 
-      if (!name || !phone) return;
+      if (!name || !phone) {
+        if (window.showToast) window.showToast('Vui lòng điền đầy đủ Họ tên và Số điện thoại!', true);
+        return;
+      }
+
+      const cleanPhone = phone.replace(/\s+/g, '');
+      if (!vnptPhoneRegex.test(cleanPhone)) {
+        if (window.showToast) window.showToast('⚠️ Số điện thoại không hợp lệ! (10 chữ số, bắt đầu 03, 05, 07, 08, 09)', true);
+        return;
+      }
+
+      if (email && !vnptEmailRegex.test(email)) {
+        if (window.showToast) window.showToast('⚠️ Địa chỉ Email không hợp lệ! (ví dụ: contact@company.vn)', true);
+        return;
+      }
 
       const formData = new FormData();
       formData.append('name', name);
