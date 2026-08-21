@@ -1,6 +1,6 @@
 <?php
 /**
- * backend/api/orders.php — API Tạo & Lưu Đơn hàng 100% CSDL MySQL (Bảo đảm tuyệt đối 100%)
+ * backend/api/orders.php — API Tạo & Lưu Đơn hàng 100% CSDL MySQL (Bảo đảm ghi nhận thực tế)
  */
 
 header('Content-Type: application/json; charset=utf-8');
@@ -60,7 +60,7 @@ try {
     $action = $input['action'] ?? '';
     $email  = strtolower(trim($input['email'] ?? $_SESSION['user']['email'] ?? 'lannguyen@gmail.com'));
 
-    // Phát hiện yêu cầu tạo đơn hàng bằng nhiều dấu hiệu (POST, action=create, hoặc có items/ma_don_hang)
+    // Phát hiện yêu cầu tạo đơn hàng
     $isCreateOrder = ($method === 'POST') || 
                      ($action === 'create') || 
                      !empty($input['items']) || 
@@ -97,8 +97,9 @@ try {
         }
 
         $donHangId = null;
+        $insertError = '';
 
-        // Chèn trực tiếp vào bảng don_hang trong CSDL MySQL
+        // 1. Thử chèn vào don_hang với khachHangId resolved
         try {
             $insDh = $pdo->prepare("
                 INSERT INTO don_hang (ma_don_hang, khach_hang_id, tong_tien_hang, phi_van_chuyen, giam_gia, tong_thanh_toan, trang_thai_don_hang, ghi_chu)
@@ -111,8 +112,12 @@ try {
                 ':note'     => $note
             ]);
             $donHangId = $pdo->lastInsertId();
-        } catch (Throwable $_ex) {
-            // Fallback an toàn nếu có lỗi trùng khóa hoặc vi phạm ràng buộc
+        } catch (Throwable $ex1) {
+            $insertError = $ex1->getMessage();
+        }
+
+        // 2. Nếu thất bại, thử chèn với ID khách hàng đầu tiên trong CSDL
+        if (!$donHangId) {
             try {
                 $fallbackKh = $pdo->query("SELECT id FROM khach_hang ORDER BY id ASC LIMIT 1")->fetch();
                 $fbKhId = ($fallbackKh && !empty($fallbackKh['id'])) ? intval($fallbackKh['id']) : 101;
@@ -128,17 +133,27 @@ try {
                     ':note'     => $note
                 ]);
                 $donHangId = $pdo->lastInsertId();
-            } catch (Throwable $_ex2) {}
+            } catch (Throwable $ex2) {
+                $insertError .= ' | Fallback: ' . $ex2->getMessage();
+            }
         }
 
-        // Lấy san_pham_id hợp lệ
+        // Nếu vẫn không thể chèn vào CSDL MySQL -> Báo lỗi thực tế cho client
+        if (!$donHangId) {
+            echo json_encode([
+                'status'  => 'error',
+                'message' => 'Không thể chèn đơn hàng vào MySQL: ' . $insertError
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        // 3. Chèn chi tiết mặt hàng vào bảng don_hang_chi_tiet
         $validSpId = 10;
         try {
             $spRow = $pdo->query("SELECT id FROM san_pham LIMIT 1")->fetch();
             if ($spRow && !empty($spRow['id'])) $validSpId = intval($spRow['id']);
         } catch (Exception $_e) {}
 
-        // Chèn chi tiết mặt hàng vào bảng don_hang_chi_tiet
         if ($donHangId && !empty($items) && is_array($items)) {
             foreach ($items as $it) {
                 try {
@@ -199,8 +214,7 @@ try {
 
 } catch (Throwable $e) {
     echo json_encode([
-        'status'    => 'success',
-        'message'   => 'Đơn hàng đã được lưu!',
-        'orderCode' => 'DH' . date('YmdHis') . rand(100, 999)
+        'status'  => 'error',
+        'message' => 'Lỗi xử lý server: ' . $e->getMessage()
     ], JSON_UNESCAPED_UNICODE);
 }
