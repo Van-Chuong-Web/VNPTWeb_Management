@@ -186,17 +186,32 @@ require_once __DIR__ . '/header.php';
                     <input type="hidden" name="action" value="change_password">
                     <div class="mb-3">
                         <label class="form-label fw-semibold small">Mật khẩu hiện tại</label>
-                        <input type="password" name="mat_khau_hien_tai" class="form-control" required>
+                        <div class="input-group">
+                            <input type="password" name="mat_khau_hien_tai" id="mat_khau_hien_tai" class="form-control" required>
+                            <button class="btn btn-outline-secondary toggle-pwd" type="button" data-target="mat_khau_hien_tai" aria-label="Hiện/Ẩn mật khẩu">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold small">Mật khẩu mới</label>
-                        <input type="password" name="mat_khau_moi" class="form-control" minlength="6" required>
+                        <div class="input-group">
+                            <input type="password" name="mat_khau_moi" id="mat_khau_moi" class="form-control" minlength="6" required>
+                            <button class="btn btn-outline-secondary toggle-pwd" type="button" data-target="mat_khau_moi" aria-label="Hiện/Ẩn mật khẩu">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold small">Xác nhận mật khẩu mới</label>
-                        <input type="password" name="xac_nhan_mat_khau" class="form-control" minlength="6" required>
+                        <div class="input-group">
+                            <input type="password" name="xac_nhan_mat_khau" id="xac_nhan_mat_khau" class="form-control" minlength="6" required>
+                            <button class="btn btn-outline-secondary toggle-pwd" type="button" data-target="xac_nhan_mat_khau" aria-label="Hiện/Ẩn mật khẩu">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
                     </div>
-                    <button type="submit" class="btn btn-warning text-white">
+                    <button type="submit" class="btn btn-warning text-white fw-bold">
                         <i class="fa-solid fa-key me-1"></i>Đổi mật khẩu
                     </button>
                 </form>
@@ -227,6 +242,26 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Toggle hiện / ẩn mật khẩu (Mắt xem mật khẩu)
+    document.querySelectorAll('.toggle-pwd').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            const input = document.getElementById(targetId);
+            const icon = this.querySelector('i');
+            if (input) {
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            }
+        });
+    });
 });
 </script>
 
