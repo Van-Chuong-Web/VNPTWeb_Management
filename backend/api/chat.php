@@ -1,6 +1,6 @@
 <?php
 /**
- * backend/api/chat.php — API Chatbot VNPT Smart AI Tích hợp Google Gemini AI Trực tiếp (Bảo đảm không Timeout)
+ * backend/api/chat.php — API Chatbot VNPT Smart AI Tích hợp Google Gemini AI Trực tiếp (Fix key fallback & 100% Gemini AI)
  */
 
 @set_time_limit(60);
@@ -20,14 +20,17 @@ if (empty($message)) {
 }
 
 // ── Gemini API Key ─────────────────────────────────────────
-$geminiApiKey = getenv('GEMINI_API_KEY') ?: ($_ENV['GEMINI_API_KEY'] ?? base64_decode('QVEuQWI4Uk42SzJka2dwSDJLNllBVWxLVS0wS2gzWTVRa3RMbTZpa25od0x0SFVHOURKWWc='));
+$userProvidedKey = base64_decode('QVEuQWI4Uk42SzJka2dwSDJLNllBVWxLVS0wS2gzWTVRa3RMbTZpa25od0x0SFVHOURKWWc=');
+$envKey = getenv('GEMINI_API_KEY') ?: ($_ENV['GEMINI_API_KEY'] ?? '');
+
+$geminiApiKey = (!empty($envKey) && strlen($envKey) > 20) ? trim($envKey) : $userProvidedKey;
 
 function callGeminiAI($userMessage, $apiKey) {
     if (empty($apiKey)) return null;
 
     $prompt = "Bạn là VNPT Smart AI — Trợ lý trí tuệ nhân tạo chuyên nghiệp của Tập đoàn VNPT Digital (Việt Nam).\n" .
-        "Bạn trả lời nhiệt tình, thân thiện, ngắn gọn và sử dụng biểu tượng icon sinh động phù hợp.\n" .
-        "Người dùng hỏi: " . $userMessage;
+        "Bạn tư vấn nhiệt tình, thân thiện, ngắn gọn và sử dụng các biểu tượng icon sinh động phù hợp.\n" .
+        "Trả lời câu hỏi người dùng bằng tiếng Việt: " . $userMessage;
 
     $payload = [
         'contents' => [
@@ -39,7 +42,7 @@ function callGeminiAI($userMessage, $apiKey) {
         ]
     ];
 
-    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=" . urlencode($apiKey);
+    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=" . $apiKey;
 
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
