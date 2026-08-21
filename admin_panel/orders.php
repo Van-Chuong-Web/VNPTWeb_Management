@@ -99,10 +99,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = (int)($_POST['id'] ?? 0);
         if ($id > 0) {
             try {
-                $stmt = $pdo->prepare("DELETE FROM don_hang WHERE id = :id");
-                $stmt->execute([':id' => $id]);
-                logActivity($pdo, "Đã xóa hóa đơn ID $id");
-                $msg = '🗑️ Đã xóa hóa đơn thành công.';
+                // Kiểm tra trạng thái đơn hàng trước khi xóa
+                $stmtCheck = $pdo->prepare("SELECT ma_don_hang, trang_thai_don_hang FROM don_hang WHERE id = :id LIMIT 1");
+                $stmtCheck->execute([':id' => $id]);
+                $orderRow = $stmtCheck->fetch();
+
+                if ($orderRow && $orderRow['trang_thai_don_hang'] === 'hoan_thanh') {
+                    $msg = '⚠️ Không thể xóa đơn hàng / hóa đơn <strong>' . htmlspecialchars($orderRow['ma_don_hang']) . '</strong> đã ở trạng thái <strong>Hoàn thành</strong>! (Để bảo đảm toàn vẹn dữ liệu doanh thu & sổ sách kế toán).';
+                    $msgType = 'danger';
+                } else {
+                    $stmt = $pdo->prepare("DELETE FROM don_hang WHERE id = :id");
+                    $stmt->execute([':id' => $id]);
+                    logActivity($pdo, "Đã xóa hóa đơn ID $id");
+                    $msg = '🗑️ Đã xóa hóa đơn thành công.';
+                }
             } catch (PDOException $e) {
                 $msg = 'Lỗi khi xóa: ' . (str_contains($e->getMessage(), 'foreign key') ? 'Không thể xóa vì hóa đơn liên kết dữ liệu khác.' : $e->getMessage());
                 $msgType = 'danger';
@@ -363,14 +373,20 @@ require_once __DIR__ . '/header.php';
                                     title="Xem / Điều chỉnh hóa đơn">
                                 <i class="fa-solid fa-file-pen"></i>
                             </button>
-                            <form method="POST" class="d-inline"
-                                  onsubmit="return confirm('Xóa vĩnh viễn hóa đơn này? Hành động không thể hoàn tác.')">
-                                <input type="hidden" name="action" value="delete">
-                                <input type="hidden" name="id" value="<?= $o['id'] ?>">
-                                <button type="submit" class="btn btn-outline-danger btn-action" title="Xóa">
+                            <?php if ($o['trang_thai_don_hang'] === 'hoan_thanh'): ?>
+                                <button type="button" class="btn btn-outline-secondary btn-action" disabled title="Không thể xóa hóa đơn đã hoàn thành" style="opacity:0.4; cursor:not-allowed;">
                                     <i class="fa-solid fa-trash"></i>
                                 </button>
-                            </form>
+                            <?php else: ?>
+                                <form method="POST" class="d-inline"
+                                      onsubmit="return confirm('Xóa vĩnh viễn hóa đơn <?= htmlspecialchars($o['ma_don_hang']) ?>? Hành động không thể hoàn tác.')">
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="id" value="<?= $o['id'] ?>">
+                                    <button type="submit" class="btn btn-outline-danger btn-action" title="Xóa">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>
