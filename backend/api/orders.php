@@ -132,14 +132,14 @@ try {
         }
 
         // Lấy san_pham_id hợp lệ
-        $validSpId = null;
+        $validSpId = 10;
         try {
             $spRow = $pdo->query("SELECT id FROM san_pham LIMIT 1")->fetch();
-            if ($spRow && !empty($spRow['id'])) $validSpId = $spRow['id'];
+            if ($spRow && !empty($spRow['id'])) $validSpId = intval($spRow['id']);
         } catch (Exception $_e) {}
 
-        // Chèn chi tiết mặt hàng vào bảng don_hang_chi_tiet (nếu có san_pham_id hợp lệ)
-        if ($donHangId && $validSpId && !empty($items) && is_array($items)) {
+        // Chèn chi tiết mặt hàng vào bảng don_hang_chi_tiet
+        if ($donHangId && !empty($items) && is_array($items)) {
             foreach ($items as $it) {
                 try {
                     $tenSp = $it['name'] ?? 'Dịch vụ VNPT';

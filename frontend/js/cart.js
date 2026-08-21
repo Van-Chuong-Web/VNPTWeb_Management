@@ -655,7 +655,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         try {
             const baseUrl = (typeof window.getApiPath === 'function') ? window.getApiPath('backend/api/orders.php') : 'backend/api/orders.php';
-            const ordersUrl = baseUrl + (baseUrl.includes('?') ? '&' : '?') + 'action=create';
+            const ordersUrl = baseUrl + (baseUrl.includes('?') ? '&' : '?') + 'action=create&t=' + Date.now();
             const res = await fetch(ordersUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
