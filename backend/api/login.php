@@ -60,7 +60,7 @@ try {
 
     if (!$userRow) {
         http_response_code(401);
-        echo json_encode(['status' => 'error', 'error' => 'Tài khoản "' . htmlspecialchars($email) . '" không tồn tại trong cơ sở dữ liệu.']);
+        echo json_encode(['status' => 'error', 'error' => 'Email hoặc mật khẩu không đúng.']);
         exit;
     }
 
@@ -95,7 +95,7 @@ try {
         }
     } else {
         http_response_code(401);
-        echo json_encode(['status' => 'error', 'error' => 'Mật khẩu nhập vào không đúng với cơ sở dữ liệu.']);
+        echo json_encode(['status' => 'error', 'error' => 'Email hoặc mật khẩu không đúng.']);
         exit;
     }
 
