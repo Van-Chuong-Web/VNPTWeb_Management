@@ -35,7 +35,6 @@ try {
     }
 
     if (empty($khIds)) {
-        // Fallback default customer ID
         $khIds = [101];
     }
 
@@ -70,10 +69,20 @@ try {
         exit;
     }
 
-    // Danh sách đơn hàng
+    // Danh sách đơn hàng: Khớp theo cả email tài khoản hoặc khach_hang_id có sẵn
     $inClause = implode(',', array_fill(0, count($khIds), '?'));
-    $stmtOrders = $pdo->prepare("SELECT * FROM don_hang WHERE khach_hang_id IN ($inClause) ORDER BY id DESC LIMIT 50");
-    $stmtOrders->execute($khIds);
+    $params = array_merge([$email, $vnvdEmail], $khIds);
+
+    $stmtOrders = $pdo->prepare("
+        SELECT DISTINCT dh.*,
+               (SELECT COUNT(*) FROM don_hang_chi_tiet ct WHERE ct.don_hang_id = dh.id) AS so_luong_san_pham
+        FROM don_hang dh
+        LEFT JOIN khach_hang kh ON kh.id = dh.khach_hang_id
+        LEFT JOIN tai_khoan tk ON tk.id = kh.tai_khoan_id
+        WHERE LOWER(tk.email) = ? OR LOWER(tk.email) = ? OR dh.khach_hang_id IN ($inClause)
+        ORDER BY dh.id DESC LIMIT 50
+    ");
+    $stmtOrders->execute($params);
     $orders = $stmtOrders->fetchAll() ?: [];
 
     echo json_encode([

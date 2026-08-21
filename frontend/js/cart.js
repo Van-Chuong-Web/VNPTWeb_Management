@@ -693,13 +693,13 @@ document.addEventListener('DOMContentLoaded', function() {
             successInfo.innerHTML = `
                 <div><strong>Mã đơn hàng:</strong> <span style="color:#0066CC;">#${returnedOrderCode}</span></div>
                 <div><strong>Tổng thanh toán:</strong> <span style="color:#CC3300; font-weight:700;">${totalFormatted}</span></div>
-                <div><strong>Trạng thái:</strong> <span style="color:#00AA55; font-weight:600;">Đã ghi nhận thanh toán vào CSDL</span></div>
+                <div><strong>Trạng thái:</strong> <span style="color:#00AA55; font-weight:600;">Đã ghi nhận thanh toán</span></div>
                 <div><strong>Thời gian:</strong> ${new Date().toLocaleString('vi-VN')}</div>
             `;
         }
 
         if (paymentSuccessModal) paymentSuccessModal.classList.add('open');
-        showToast('🎉 Thanh toán thành công! Đã lưu đơn hàng #' + returnedOrderCode + ' vào CSDL!');
+        showToast('🎉 Thanh toán thành công! Mã đơn: #' + returnedOrderCode);
 
         // Báo cho giao diện "Đơn hàng của tôi" tự động nạp lại dữ liệu đơn hàng mới từ MySQL
         document.dispatchEvent(new CustomEvent('vnpt:ordercreated'));
