@@ -579,9 +579,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.VNPTConfirmPayment = async function(orderCode, totalFormatted) {
         try {
-            if (Api && typeof Api.getToken === 'function' && Api.getToken()) {
-                await Api.checkout('Thanh toán đơn hàng #' + orderCode);
-            }
+            const user = window.VNPTAuth ? window.VNPTAuth.getCurrentUser() : null;
+            const ordersUrl = (typeof window.getApiPath === 'function') ? window.getApiPath('backend/api/orders.php') : 'backend/api/orders.php';
+            await fetch(ordersUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: user ? user.email : '',
+                    ma_don_hang: orderCode,
+                    items: currentCartItems,
+                    totalMoney: currentCartItems.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0),
+                    note: 'Thanh toán đơn hàng #' + orderCode
+                })
+            });
         } catch (_err) {}
 
         markProductsAsPurchased(currentCartItems);
