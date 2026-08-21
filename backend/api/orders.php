@@ -1,6 +1,6 @@
 <?php
 /**
- * backend/api/orders.php — API Tạo & Lưu Đơn hàng 100% CSDL MySQL (Bảo đảm ghi nhận thực tế)
+ * backend/api/orders.php — API Tạo & Lưu Đơn hàng 100% CSDL MySQL (Chuẩn hóa tham số PDO)
  */
 
 header('Content-Type: application/json; charset=utf-8');
@@ -99,17 +99,18 @@ try {
         $donHangId = null;
         $insertError = '';
 
-        // 1. Thử chèn vào don_hang với khachHangId resolved
+        // 1. Thử chèn vào don_hang với khachHangId resolved (dùng tham số duy nhất để tránh lỗi HY093)
         try {
             $insDh = $pdo->prepare("
                 INSERT INTO don_hang (ma_don_hang, khach_hang_id, tong_tien_hang, phi_van_chuyen, giam_gia, tong_thanh_toan, trang_thai_don_hang, ghi_chu)
-                VALUES (:ma, :khId, :tongTien, 0, 0, :tongTien, 'cho_xac_nhan', :note)
+                VALUES (:ma, :khId, :tongTien, 0, 0, :tongThanhToan, 'cho_xac_nhan', :note)
             ");
             $insDh->execute([
-                ':ma'       => $maDonHang,
-                ':khId'     => $khachHangId,
-                ':tongTien' => $totalMoney,
-                ':note'     => $note
+                ':ma'            => $maDonHang,
+                ':khId'          => $khachHangId,
+                ':tongTien'      => $totalMoney,
+                ':tongThanhToan' => $totalMoney,
+                ':note'          => $note
             ]);
             $donHangId = $pdo->lastInsertId();
         } catch (Throwable $ex1) {
@@ -124,13 +125,14 @@ try {
                 $maDonHang = 'DH' . date('YmdHis') . rand(100, 999);
                 $insDh = $pdo->prepare("
                     INSERT INTO don_hang (ma_don_hang, khach_hang_id, tong_tien_hang, phi_van_chuyen, giam_gia, tong_thanh_toan, trang_thai_don_hang, ghi_chu)
-                    VALUES (:ma, :khId, :tongTien, 0, 0, :tongTien, 'cho_xac_nhan', :note)
+                    VALUES (:ma, :khId, :tongTien, 0, 0, :tongThanhToan, 'cho_xac_nhan', :note)
                 ");
                 $insDh->execute([
-                    ':ma'       => $maDonHang,
-                    ':khId'     => $fbKhId,
-                    ':tongTien' => $totalMoney,
-                    ':note'     => $note
+                    ':ma'            => $maDonHang,
+                    ':khId'          => $fbKhId,
+                    ':tongTien'      => $totalMoney,
+                    ':tongThanhToan' => $totalMoney,
+                    ':note'          => $note
                 ]);
                 $donHangId = $pdo->lastInsertId();
             } catch (Throwable $ex2) {
