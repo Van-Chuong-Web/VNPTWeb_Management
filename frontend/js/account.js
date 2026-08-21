@@ -122,7 +122,7 @@
   /* ------------------------------------------------------------
    * 1) HỒ SƠ CÁ NHÂN
    * ------------------------------------------------------------ */
-  function renderProfile(user) {
+  function renderProfile(user, successMsg = '') {
     const fn = getFirstName(user);
     const ln = getLastName(user);
     const ph = getPhone(user);
@@ -297,14 +297,22 @@
         }
 
         document.dispatchEvent(new CustomEvent('vnpt:authchange'));
-        showAlert(alertBox, 'success', data.message || 'Đã cập nhật thông tin cá nhân & ảnh đại diện thành công!');
-        renderProfile(updatedUser);
+        const msg = data.message || 'Đã cập nhật thông tin cá nhân & ảnh đại diện thành công!';
+        if (typeof showToast === 'function') {
+          showToast(msg);
+        }
+        renderProfile(updatedUser, msg);
 
       } catch (err) {
         showAlert(alertBox, 'error', err.message || 'Không thể cập nhật. Vui lòng thử lại.');
-        submitBtn.disabled = false;
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
       }
     });
+
+    if (successMsg) {
+      showAlert(document.getElementById('acctProfileAlert'), 'success', successMsg);
+    }
   }
 
   /* ------------------------------------------------------------

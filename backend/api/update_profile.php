@@ -117,15 +117,16 @@ try {
         }
 
         // Cập nhật họ tên và SĐT trong khach_hang hoặc nhan_vien
-        if (!empty($hoTen)) {
-            if (!empty($userRow['kh_id'])) {
-                $upKh = $pdo->prepare("UPDATE khach_hang SET ho_ten = :name, so_dien_thoai = :phone WHERE id = :id");
-                $upKh->execute([':name' => $hoTen, ':phone' => $phone, ':id' => $userRow['kh_id']]);
-            }
-            if (!empty($userRow['nv_id'])) {
-                $upNv = $pdo->prepare("UPDATE nhan_vien SET ho_ten = :name, so_dien_thoai = :phone WHERE id = :id");
-                $upNv->execute([':name' => $hoTen, ':phone' => $phone, ':id' => $userRow['nv_id']]);
-            }
+        if (!empty($userRow['kh_id'])) {
+            $upKh = $pdo->prepare("UPDATE khach_hang SET ho_ten = :name, so_dien_thoai = :phone WHERE id = :id");
+            $upKh->execute([':name' => $hoTen, ':phone' => $phone, ':id' => $userRow['kh_id']]);
+        } elseif (!empty($userRow['nv_id'])) {
+            $upNv = $pdo->prepare("UPDATE nhan_vien SET ho_ten = :name, so_dien_thoai = :phone WHERE id = :id");
+            $upNv->execute([':name' => $hoTen, ':phone' => $phone, ':id' => $userRow['nv_id']]);
+        } else {
+            // Tự động tạo bản ghi khach_hang mới nếu chưa có
+            $insKh = $pdo->prepare("INSERT INTO khach_hang (tai_khoan_id, ho_ten, so_dien_thoai) VALUES (:tkId, :name, :phone)");
+            $insKh->execute([':tkId' => $tkId, ':name' => $hoTen, ':phone' => $phone]);
         }
     }
 
