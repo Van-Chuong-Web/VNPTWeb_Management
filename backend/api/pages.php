@@ -17,7 +17,8 @@ function toCleanSlug($str) {
 }
 
 function fixImgPath($path) {
-    if (empty($path)) return '';
+    $defaultImg = 'frontend/assets/images/uploads/img_20260807_044833_1924.jpg';
+    if (empty($path)) return $defaultImg;
     if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://') || str_starts_with($path, 'data:')) {
         return $path;
     }
@@ -25,6 +26,13 @@ function fixImgPath($path) {
     if (!str_starts_with($clean, 'frontend/') && !str_starts_with($clean, 'uploads/')) {
         $clean = 'frontend/assets/images/uploads/' . $clean;
     }
+    
+    // Kiểm tra xem tệp ảnh có thực sự tồn tại trên ổ đĩa không
+    $fullDiskPath = __DIR__ . '/../../' . $clean;
+    if (!file_exists($fullDiskPath)) {
+        return $defaultImg;
+    }
+
     return $clean;
 }
 
