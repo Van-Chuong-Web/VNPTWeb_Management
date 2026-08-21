@@ -1,6 +1,6 @@
 <?php
 /**
- * backend/api/chat.php — API Chatbot VNPT Smart AI Tích hợp Google Gemini AI (Hỗ trợ cả cURL & file_get_contents)
+ * backend/api/chat.php — API Chatbot VNPT Smart AI Tích hợp Google Gemini AI (Diagnostic & Fail-Safe)
  */
 
 @set_time_limit(60);
@@ -25,8 +25,11 @@ $envKey = getenv('GEMINI_API_KEY') ?: ($_ENV['GEMINI_API_KEY'] ?? '');
 
 $geminiApiKey = (!empty($envKey) && strlen($envKey) > 20) ? trim($envKey) : $userProvidedKey;
 
-function callGeminiAI($userMessage, $apiKey) {
-    if (empty($apiKey)) return null;
+function callGeminiAI($userMessage, $apiKey, &$debugInfo = null) {
+    if (empty($apiKey)) {
+        $debugInfo = "API Key empty";
+        return null;
+    }
 
     $prompt = "Bạn là VNPT Smart AI — Trợ lý trí tuệ nhân tạo chuyên nghiệp của Tập đoàn VNPT Digital (Việt Nam).\n" .
         "Bạn tư vấn nhiệt tình, thân thiện, ngắn gọn và sử dụng các biểu tượng icon sinh động phù hợp.\n" .
@@ -45,7 +48,7 @@ function callGeminiAI($userMessage, $apiKey) {
     $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=" . $apiKey;
     $jsonPayload = json_encode($payload, JSON_UNESCAPED_UNICODE);
 
-    // 1. Thử dùng cURL nếu cURL extension được bật trên VPS
+    // 1. Thử dùng cURL
     if (function_exists('curl_init')) {
         try {
             $ch = curl_init($url);
@@ -53,12 +56,14 @@ function callGeminiAI($userMessage, $apiKey) {
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 45);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 40);
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
 
             $res = curl_exec($ch);
             $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlErr = curl_error($ch);
             curl_close($ch);
 
             if ($res && ($code === 200 || $code === 201)) {
@@ -67,17 +72,22 @@ function callGeminiAI($userMessage, $apiKey) {
                     return trim($json['candidates'][0]['content']['parts'][0]['text']);
                 }
             }
-        } catch (Throwable $_e1) {}
+            $debugInfo = "cURL Code $code | Err: $curlErr | Res: " . substr((string)$res, 0, 150);
+        } catch (Throwable $exCurl) {
+            $debugInfo = "cURL Exception: " . $exCurl->getMessage();
+        }
+    } else {
+        $debugInfo = "curl_init missing";
     }
 
-    // 2. Thử dùng file_get_contents stream context (Dự phòng nếu VPS chưa bật php-curl)
+    // 2. Thử dùng stream context
     try {
         $opts = [
             'http' => [
                 'method'  => 'POST',
                 'header'  => "Content-Type: application/json\r\n",
                 'content' => $jsonPayload,
-                'timeout' => 45,
+                'timeout' => 40,
                 'ignore_errors' => true
             ],
             'ssl' => [
@@ -92,14 +102,20 @@ function callGeminiAI($userMessage, $apiKey) {
             if (!empty($json['candidates'][0]['content']['parts'][0]['text'])) {
                 return trim($json['candidates'][0]['content']['parts'][0]['text']);
             }
+            $debugInfo .= " | Stream Res: " . substr((string)$res, 0, 150);
+        } else {
+            $debugInfo .= " | Stream empty";
         }
-    } catch (Throwable $_e2) {}
+    } catch (Throwable $exStream) {
+        $debugInfo .= " | Stream Exception: " . $exStream->getMessage();
+    }
 
     return null;
 }
 
 // ── Gọi Gemini AI Trực tiếp ────────────────────────────────
-$aiReply = callGeminiAI($message, $geminiApiKey);
+$debugLog = '';
+$aiReply = callGeminiAI($message, $geminiApiKey, $debugLog);
 
 if ($aiReply !== null) {
     echo json_encode([
@@ -118,11 +134,12 @@ if (preg_match('/chào|hi|hello|xin chào|bắt đầu/ui', $text)) {
 } elseif (preg_match('/cloud|vps|server|máy chủ|lưu trữ|ha tang|doanh nghiệp/ui', $text)) {
     $reply = "☁️ **Hạ tầng VNPT Cloud Enterprise**:\n- **Đặc điểm**: Đạt tiêu chuẩn Uptime Tier III Quốc tế, băng thông nội địa 10Gbps.\n- **Gói Cao Cấp**: **7.500.000 ₫/tháng** (Full vCPU High Performance, Backup tự động hàng ngày, Cam kết SLA 99.99%).\n- **Gói Doanh Nghiệp**: **2.900.000 ₫/tháng** phù hợp doanh nghiệp vừa và nhỏ.\n\n👉 *Bạn có thể chọn gói Cloud và bấm \"Đăng ký ngay\" để đưa vào giỏ hàng!*";
 } else {
-    $reply = "Cảm ơn bạn đã nhắn tin cho **VNPT Smart AI**! 🤖\n\nTôi đã nhận được câu hỏi: *\"" . mb_substr($message, 0, 60, 'UTF-8') . "\"*\n\nBạn có thể hỏi tôi chi tiết hơn về các dịch vụ số VNPT Digital!";
+    $reply = "Cảm ơn bạn đã nhắn tin cho **VNPT Smart AI**! 🤖\n\nTôi đã nhận được câu hỏi: *\"" . mb_substr($message, 0, 60, 'UTF-8') . "\"*\n\n*(Ghi chú chẩn đoán kết nối AI: {$debugLog})*";
 }
 
 echo json_encode([
     'reply'  => $reply,
     'source' => 'local_fallback',
-    'status' => 'success'
+    'status' => 'success',
+    'debug'  => $debugLog
 ], JSON_UNESCAPED_UNICODE);
