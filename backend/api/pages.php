@@ -16,13 +16,24 @@ function toCleanSlug($str) {
     return trim($str, '-');
 }
 
-function fixImgPath($path) {
-    $defaultImg = 'frontend/assets/images/uploads/img_20260807_044833_1924.jpg';
+function fixImgPath($path, $postId = 0) {
+    $fallbackImages = [
+        1 => 'frontend/assets/images/uploads/img_20260731_035650_3412.jpg',
+        2 => 'frontend/assets/images/uploads/img_20260731_091331_7815.jpg',
+        3 => 'frontend/assets/images/uploads/img_20260803_021808_2671.jpg',
+        4 => 'frontend/assets/images/uploads/img_20260805_082315_1739.jpg',
+        5 => 'frontend/assets/images/uploads/img_20260807_044833_1924.jpg',
+    ];
+    $defaultImg = $fallbackImages[(int)$postId] ?? $fallbackImages[(int)($postId % 5) + 1] ?? 'frontend/assets/images/uploads/img_20260807_044833_1924.jpg';
+
     if (empty($path)) return $defaultImg;
     if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://') || str_starts_with($path, 'data:')) {
         return $path;
     }
     $clean = ltrim($path, '/');
+    if (str_starts_with($clean, '../')) {
+        $clean = ltrim(substr($clean, 3), '/');
+    }
     if (!str_starts_with($clean, 'frontend/') && !str_starts_with($clean, 'uploads/')) {
         $clean = 'frontend/assets/images/uploads/' . $clean;
     }
@@ -74,7 +85,7 @@ if (!empty($resPost)) {
             'title'         => $r['tieu_de'],
             'slug'          => $r['slug'],
             'tom_tat'       => $r['tom_tat'],
-            'anh_bia'       => fixImgPath($r['anh_bia']),
+            'anh_bia'       => fixImgPath($r['anh_bia'], $r['id']),
             'ngay_xuat_ban' => $r['ngay_xuat_ban'] ? date('H:i | d/m/Y', strtotime($r['ngay_xuat_ban'])) : ''
         ];
     }, $resRelated ?: []);
@@ -87,7 +98,7 @@ if (!empty($resPost)) {
             'title'         => $post['tieu_de'],
             'subtitle'      => $post['tom_tat'],
             'noi_dung'      => $post['noi_dung'],
-            'anh_bia'       => fixImgPath($post['anh_bia']),
+            'anh_bia'       => fixImgPath($post['anh_bia'], $post['id']),
             'danh_muc'      => $post['ten_danh_muc'] ?: 'Tin tức',
             'tac_gia'       => $post['ten_tac_gia'] ?: 'BQT VNPT',
             'ngay_xuat_ban' => $post['ngay_xuat_ban'] ? date('H:i | d/m/Y', strtotime($post['ngay_xuat_ban'])) : '',
@@ -137,7 +148,7 @@ if ($isNewsSection) {
             'title'         => $p['tieu_de'],
             'slug'          => $p['slug'],
             'tom_tat'       => $p['tom_tat'],
-            'anh_bia'       => fixImgPath($p['anh_bia']),
+            'anh_bia'       => fixImgPath($p['anh_bia'], $p['id']),
             'danh_muc'      => $p['ten_danh_muc'] ?: 'Tin tức',
             'tac_gia'       => $p['ten_tac_gia'] ?: 'BQT VNPT',
             'ngay_xuat_ban' => $p['ngay_xuat_ban'] ? date('d/m/Y H:i', strtotime($p['ngay_xuat_ban'])) : ''
