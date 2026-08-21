@@ -95,40 +95,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    /* ---- Lấy dữ liệu giỏ hàng (Online / Offline Fallback) ---- */
+    /* ---- Lấy dữ liệu giỏ hàng (LocalStorage & PHP API Sync) ---- */
     async function fetchCart() {
         let items = [];
-        if (Api && typeof Api.getToken === 'function' && Api.getToken()) {
-            try {
-                const data = await Api.getCart();
-                if (data && Array.isArray(data.items)) {
-                    // Lọc trùng theo id hoặc name
-                    const map = new Map();
-                    data.items.forEach(it => {
-                        const key = (it.ma_san_pham || it.code || it.id || it.name || '').toLowerCase();
-                        if (!map.has(key)) {
-                            map.set(key, {
-                                id: it.ma_san_pham || it.code || it.id,
-                                name: it.ten_san_pham || it.name,
-                                price: Number(it.gia || it.price || 0),
-                                qty: 1, // 🔴 Số lượng luôn cố định = 1
-                                icon: it.icon || 'package',
-                                color: it.color || '#0066CC'
-                            });
-                        }
-                    });
-                    items = Array.from(map.values());
-                    renderCart(items);
-                    return;
-                }
-            } catch (_e) {
-                // fallback
-            }
-        }
-
         try {
             items = JSON.parse(localStorage.getItem('vnpt_cart') || '[]');
-            // Tự động chuẩn hóa và lọc trùng trong giỏ hàng localStorage về số lượng = 1
             const map = new Map();
             items.forEach(it => {
                 const key = (it.id || it.name || '').toLowerCase();
@@ -142,6 +113,23 @@ document.addEventListener('DOMContentLoaded', function() {
             items = [];
         }
         renderCart(items);
+
+        // Đồng bộ với backend PHP API
+        try {
+            const cartUrl = (typeof window.getApiPath === 'function') ? window.getApiPath('backend/api/cart.php') : 'backend/api/cart.php';
+            const res = await fetch(cartUrl);
+            const data = await res.json();
+            if (res.ok && data && Array.isArray(data.items) && data.items.length > 0) {
+                const map = new Map();
+                data.items.forEach(it => {
+                    const key = (it.id || it.name || '').toLowerCase();
+                    if (!map.has(key)) map.set(key, { ...it, qty: 1 });
+                });
+                items = Array.from(map.values());
+                localStorage.setItem('vnpt_cart', JSON.stringify(items));
+                renderCart(items);
+            }
+        } catch (_e) {}
     }
 
     /* ---- Render giao diện Giỏ hàng ---- */
@@ -385,65 +373,25 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // 1) Try API
-        if (Api && typeof Api.getToken === 'function' && Api.getToken()) {
-            try {
-                await Api.addToCart(code, 1);
-                await fetchCart();
-                safeShowToast(`🛒 Đã thêm gói "${name}" vào giỏ hàng!`);
-                openCart();
-                return;
-            } catch (err) {
-                if (err.status === 401 || (err.message && err.message.toLowerCase().includes('đăng nhập'))) {
-                    if (isLoggedIn) {
-                        let cart = [];
-                        try { cart = JSON.parse(localStorage.getItem('vnpt_cart') || '[]'); } catch (_e) { cart = []; }
-                        const existIndex = cart.findIndex(it => (it.id || '').toString().toLowerCase() === code.toLowerCase() || (it.name || '').toString().toLowerCase() === name.toLowerCase());
-                        if (existIndex > -1) {
-                            cart[existIndex].qty = 1;
-                        } else {
-                            cart.push({ id: code, name, price, qty: 1, icon, color });
-                        }
-                        localStorage.setItem('vnpt_cart', JSON.stringify(cart));
-                        renderCart(cart);
-                        safeShowToast(`🛒 Đã thêm gói "${name}" vào giỏ hàng!`);
-                        openCart();
-                        return;
-                    }
-                    closeCart();
-                    if (Api) Api.setToken('');
-                    localStorage.removeItem('vnpt_user');
-                    sessionStorage.removeItem('vnpt_user');
-                    safeShowToast('⚠️ Vui lòng đăng nhập để đăng ký mua sản phẩm!', true);
-                    if (typeof window.openLoginModal === 'function') window.openLoginModal();
-                    return;
-                }
-                safeShowToast(`⚠️ ${err.message || ('Gói "' + name + '" đã có trong giỏ hàng!')}`, true);
-                await fetchCart();
-                openCart();
-                return;
-            }
-        }
-
-        // 2) Offline / LocalStorage
+        // Thêm sản phẩm trực tiếp vào giỏ hàng instant 0ms
         let cart = [];
-        try {
-            cart = JSON.parse(localStorage.getItem('vnpt_cart') || '[]');
-        } catch (_err) {
-            cart = [];
-        }
+        try { cart = JSON.parse(localStorage.getItem('vnpt_cart') || '[]'); } catch (_err) { cart = []; }
 
-        cart.push({
-            id: code,
-            name: name,
-            price: price,
-            qty: 1,
-            icon: icon,
-            color: color
-        });
-
+        const newItem = { id: code, name, price, qty: 1, icon, color };
+        cart.push(newItem);
         localStorage.setItem('vnpt_cart', JSON.stringify(cart));
         renderCart(cart);
+
+        // Gửi không bất đồng bộ tới backend PHP API
+        try {
+            const cartUrl = (typeof window.getApiPath === 'function') ? window.getApiPath('backend/api/cart.php') : 'backend/api/cart.php';
+            fetch(cartUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newItem)
+            }).catch(() => {});
+        } catch (_e) {}
+
         safeShowToast(`🛒 Đã thêm gói "${name}" vào giỏ hàng!`);
         openCart();
     });
