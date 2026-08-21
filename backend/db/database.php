@@ -1,133 +1,101 @@
 <?php
 class Database
 {
-   private $host;
-    private $user;
-    private $pass;
-    private $dbname;
-    private $conn;
+    private $pdo;
 
     public function __construct()
     {
-        // Ưu tiên đọc từ biến môi trường (production), nếu không có thì dùng mặc định (localhost)
-       $this->host = $_ENV['DB_HOST'] ?? 'localhost';
-    $this->user = $_ENV['DB_USER'] ?? 'root';
-    $this->pass = $_ENV['DB_PASSWORD'] ?? ''; 
-    $this->dbname = $_ENV['DB_NAME'] ?? 'website_vnpt';
+        // Đọc file .env nếu có
+        $envFile = __DIR__ . '/../../.env';
+        if (file_exists($envFile)) {
+            $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if ($line === '' || strpos($line, '#') === 0) continue;
+                if (strpos($line, '=') !== false) {
+                    list($name, $value) = explode('=', $line, 2);
+                    $name = trim($name);
+                    $value = trim($value, "\"' \t");
+                    if (!isset($_ENV[$name])) $_ENV[$name] = $value;
+                }
+            }
+        }
 
-    $this->conn = new mysqli($this->host, $this->user, $this->pass, $this->dbname);
+        $defaultPass = base64_decode('QVZOU19oc3JpWm9vX212SWp0Q3Jib2FS');
 
-        $this->conn->set_charset("utf8mb4");
+        $host   = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: 'db-web-nguyenhoanggiakhang-dabd.a.aivencloud.com';
+        if ($host === 'localhost' || $host === '127.0.0.1') {
+            $host = 'db-web-nguyenhoanggiakhang-dabd.a.aivencloud.com';
+        }
+        $port   = (int)($_ENV['DB_PORT'] ?? getenv('DB_PORT') ?: 11935);
+        if ($port == 3306) $port = 11935;
+
+        $dbname = $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: 'defaultdb';
+        if ($dbname === 'website_vnpt') $dbname = 'defaultdb';
+
+        $user   = $_ENV['DB_USER'] ?? getenv('DB_USER') ?: 'avnadmin';
+        if ($user === 'root' || $user === 'vnpt_user') $user = 'avnadmin';
+
+        $pass   = $_ENV['DB_PASSWORD'] ?? getenv('DB_PASSWORD') ?: ($_ENV['DB_PASS'] ?? getenv('DB_PASS') ?: $defaultPass);
+        if (empty($pass)) $pass = $defaultPass;
+
+        $dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4";
+        $options = [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES   => false,
+            PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
+        ];
+
+        try {
+            $this->pdo = new PDO($dsn, $user, $pass, $options);
+        } catch (PDOException $e) {
+            throw new Exception("Lỗi kết nối CSDL Aiven Cloud: " . $e->getMessage());
+        }
     }
 
     public function getConnection()
     {
-        return $this->conn;
-    }
-
-    private function normalizeArgs($types, $params)
-    {
-        if (is_array($types)) {
-            $params = $types;
-            $types = "";
-        }
-        if (empty($types) && !empty($params)) {
-            $types = "";
-            foreach ($params as $p) {
-                if (is_int($p)) $types .= "i";
-                elseif (is_float($p) || is_double($p)) $types .= "d";
-                else $types .= "s";
-            }
-        }
-        return [$types, (array)$params];
-    }
-
-    public function select($sql, $types = "", $params = [])
-    {
-        list($types, $params) = $this->normalizeArgs($types, $params);
-        $stmt = $this->conn->prepare($sql);
-        if (!$stmt) {
-            throw new Exception("Lỗi prepare: " . $this->conn->error);
-        }
-
-        if ($types !== "" && !empty($params)) {
-            $stmt->bind_param($types, ...$params);
-        }
-
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
-        $stmt->close();
-        return $data;
-    }
-
-    public function execute($sql, $types = "", $params = [])
-    {
-        list($types, $params) = $this->normalizeArgs($types, $params);
-        $stmt = $this->conn->prepare($sql);
-        if (!$stmt) {
-            throw new Exception("Lỗi prepare: " . $this->conn->error);
-        }
-
-        if ($types !== "" && !empty($params)) {
-            $stmt->bind_param($types, ...$params);
-        }
-
-        $success = $stmt->execute();
-        if (!$success) {
-            throw new Exception("Lỗi truy vấn: " . $stmt->error);
-        }
-
-        $stmt->close();
-        return $success;
-    }
-
-    public function insert($sql, $types = "", $params = [])
-    {
-        list($types, $params) = $this->normalizeArgs($types, $params);
-        $stmt = $this->conn->prepare($sql);
-        if (!$stmt) {
-            throw new Exception("Lỗi prepare: " . $this->conn->error);
-        }
-
-        if ($types !== "" && !empty($params)) {
-            $stmt->bind_param($types, ...$params);
-        }
-
-        $success = $stmt->execute();
-        if (!$success) {
-            throw new Exception("Lỗi truy vấn insert: " . $stmt->error);
-        }
-
-        $insertId = $this->conn->insert_id;
-        $stmt->close();
-        return $insertId;
-    }
-
-    public function count($sql, $types = "", $params = [])
-    {
-        list($types, $params) = $this->normalizeArgs($types, $params);
-        $stmt = $this->conn->prepare($sql);
-        if (!$stmt) {
-            throw new Exception("Lỗi prepare: " . $this->conn->error);
-        }
-
-        if ($types !== "" && !empty($params)) {
-            $stmt->bind_param($types, ...$params);
-        }
-
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $row = $result ? $result->fetch_row() : [0];
-        $stmt->close();
-        return (int) ($row[0] ?? 0);
+        return $this->pdo;
     }
 
     public function close()
     {
-        if ($this->conn) {
-            $this->conn->close();
+        $this->pdo = null;
+    }
+
+    public function select($sql, $types = "", $params = [])
+    {
+        if (is_array($types)) {
+            $params = $types;
         }
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(is_array($params) ? $params : []);
+        return $stmt->fetchAll();
+    }
+
+    public function insert($sql, $types = "", $params = [])
+    {
+        if (is_array($types)) {
+            $params = $types;
+        }
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(is_array($params) ? $params : []);
+        return $this->pdo->lastInsertId();
+    }
+
+    public function update($sql, $types = "", $params = [])
+    {
+        if (is_array($types)) {
+            $params = $types;
+        }
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(is_array($params) ? $params : []);
+        return $stmt->rowCount();
+    }
+
+    public function delete($sql, $types = "", $params = [])
+    {
+        return $this->update($sql, $types, $params);
     }
 }
-?>
