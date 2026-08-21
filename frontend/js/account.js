@@ -138,7 +138,7 @@
     const fn = getFirstName(user);
     const ln = getLastName(user);
     const ph = getPhone(user);
-    const isStaffAcc = isStaffUser() || (user && (user.loai_tai_khoan === 'nhan_vien' || ['admin', 'quan_tri_vien', 'bien_tap_vien', 'nhan_vien_ban_hang', 'quan_ly', 'editor', 'staff'].includes(user.role || user.ten_vai_tro)));
+    const isStaffAcc = !!(user && (user.loai_tai_khoan === 'nhan_vien' || ['admin', 'quan_tri_vien', 'bien_tap_vien', 'nhan_vien_ban_hang', 'quan_ly', 'editor', 'staff'].includes((user.role || user.ten_vai_tro || '').toLowerCase())));
     const avatarPath = user.hinh_anh_url || user.avatar || '';
     const avatarSrc = avatarPath ? (avatarPath.startsWith('http') || avatarPath.startsWith('data:') ? avatarPath : avatarPath.replace(/^(\.\.\/|\/)+/, '')) : '';
 
