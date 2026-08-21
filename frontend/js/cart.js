@@ -352,12 +352,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!isLoggedIn) {
             closeCart();
+            const msg = '⚠️ Vui lòng <strong>Đăng nhập</strong> hoặc <strong>Đăng ký</strong> tài khoản để tiếp tục đăng ký dịch vụ!';
             safeShowToast('⚠️ Vui lòng đăng nhập để đăng ký mua sản phẩm!', true);
             if (typeof window.openLoginModal === 'function') {
-                window.openLoginModal();
+                window.openLoginModal(msg);
             } else {
                 const loginModal = document.getElementById('loginModal');
                 const modalOverlay = document.getElementById('modalOverlay');
+                const noticeBox = document.getElementById('loginNoticeBox');
+                const noticeText = document.getElementById('loginNoticeText');
+                if (noticeBox) {
+                    if (noticeText) noticeText.innerHTML = msg;
+                    noticeBox.style.display = 'flex';
+                }
                 if (loginModal) {
                     loginModal.style.display = 'flex';
                     loginModal.classList.add('open');
@@ -458,12 +465,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!isLoggedIn) {
                 closeCart();
+                const msg = '⚠️ Vui lòng <strong>Đăng nhập</strong> hoặc <strong>Đăng ký</strong> tài khoản để tiến hành thanh toán dịch vụ!';
                 safeShowToast('⚠️ Vui lòng đăng nhập để tiến hành thanh toán!', true);
                 if (typeof window.openLoginModal === 'function') {
-                    window.openLoginModal();
+                    window.openLoginModal(msg);
                 } else {
                     const loginModal = document.getElementById('loginModal');
                     const modalOverlay = document.getElementById('modalOverlay');
+                    const noticeBox = document.getElementById('loginNoticeBox');
+                    const noticeText = document.getElementById('loginNoticeText');
+                    if (noticeBox) {
+                        if (noticeText) noticeText.innerHTML = msg;
+                        noticeBox.style.display = 'flex';
+                    }
                     if (loginModal) {
                         loginModal.style.display = 'flex';
                         loginModal.classList.add('open');

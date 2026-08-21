@@ -193,7 +193,20 @@ window.closeAllAuthModals = function() {
   function getRegisterModal() { return document.getElementById('registerModal'); }
   function getModalOverlay() { return document.getElementById('modalOverlay'); }
 
-  window.openLoginModal = () => openModal(getLoginModal());
+  window.openLoginModal = (noticeMsg) => {
+    const loginModal = getLoginModal();
+    const noticeBox = document.getElementById('loginNoticeBox');
+    const noticeText = document.getElementById('loginNoticeText');
+    if (noticeBox) {
+      if (noticeMsg) {
+        if (noticeText) noticeText.innerHTML = noticeMsg;
+        noticeBox.style.display = 'flex';
+      } else {
+        noticeBox.style.display = 'none';
+      }
+    }
+    openModal(loginModal);
+  };
   window.openRegisterModal = () => openModal(getRegisterModal());
   window.VNPTAuth = { getCurrentUser, setCurrentUser, isAdmin, getUsers, updateAuthUI, openLoginModal: window.openLoginModal, openRegisterModal: window.openRegisterModal };
 
