@@ -187,18 +187,18 @@ document.addEventListener('DOMContentLoaded', function() {
         let totalMoney = 0;
 
         currentCartItems.forEach((item) => {
-            const qty = item.qty || 1;
-            totalMoney += item.price * qty;
+            const qty = 1;
+            item.qty = 1;
+            totalMoney += item.price;
             html += `
                 <div class="cart-item">
                     <div class="cart-item-icon" style="background: ${item.color || '#0066CC'}"><i data-lucide="${item.icon || 'package'}"></i></div>
                     <div class="cart-item-info">
                         <div class="cart-item-name">${item.name}</div>
                         <div class="cart-item-price">${new Intl.NumberFormat('vi-VN').format(item.price)} ₫</div>
-                        <div style="display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 2px 6px;">
-                            <button type="button" class="qty-btn btn-minus" data-code="${item.id}" data-qty="${qty}" style="background:none; border:none; cursor:pointer; color:#0066CC; font-weight:800; font-size:1rem; padding:2px 6px;">-</button>
-                            <span style="font-size: 0.85rem; font-weight: 800; color: #0F172A; min-width:18px; text-align:center;">${qty}</span>
-                            <button type="button" class="qty-btn btn-plus" data-code="${item.id}" data-qty="${qty}" style="background:none; border:none; cursor:pointer; color:#0066CC; font-weight:800; font-size:1rem; padding:2px 6px;">+</button>
+                        <div style="display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 3px 8px;">
+                            <span style="font-size: 0.8rem; font-weight: 700; color: #64748B;">Số lượng: 1</span>
+                            <span style="font-size: 0.75rem; color: #0066CC; font-weight: 600; margin-left: 4px;">(Tối đa 1)</span>
                         </div>
                     </div>
                     <div class="cart-item-remove" data-code="${item.id}" title="Xóa khỏi giỏ hàng"><i data-lucide="trash-2"></i></div>
@@ -412,7 +412,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         if (existingIndex > -1) {
-            cart[existingIndex].qty = (cart[existingIndex].qty || 1) + 1;
+            cart[existingIndex].qty = 1;
             localStorage.setItem('vnpt_cart', JSON.stringify(cart));
             renderCart(cart);
 
@@ -425,7 +425,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }).catch(() => {});
             } catch (_e) {}
 
-            safeShowToast(`🛒 Đã tăng số lượng gói "${name}" lên ${cart[existingIndex].qty}!`);
+            safeShowToast(`⚠️ Gói cước "${name}" đã có trong giỏ hàng của bạn!`, true);
             openCart();
             return;
         }
