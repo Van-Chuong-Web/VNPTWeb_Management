@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 2) Thử fetch tới PHP API (Cổng 8080 / Apache)
     try {
-      const phpRes = await fetch('../backend/api/chat.php', {
+      const phpRes = await fetch('backend/api/chat.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userText, history }),

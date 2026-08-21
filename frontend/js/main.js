@@ -567,7 +567,7 @@
       closeConsultation();
 
       try {
-        const res = await fetch('../backend/api/consultation.php', {
+        const res = await fetch('backend/api/consultation.php', {
           method: 'POST',
           body: formData
         });
@@ -613,7 +613,7 @@
       formData.append('message', message || '');
 
       try {
-        const res = await fetch('../backend/api/consultation.php', {
+        const res = await fetch('backend/api/consultation.php', {
           method: 'POST',
           body: formData
         });
@@ -916,7 +916,7 @@
         checkSupportResultsList.innerHTML = '<div style="text-align:center;color:#64748B;padding:30px;"><i class="fa-solid fa-spinner fa-spin fa-2x mb-2"></i><p>Đang tìm câu trả lời...</p></div>';
       }
 
-      fetch('../backend/api/check_support_status.php?query=' + encodeURIComponent(query))
+      fetch('backend/api/check_support_status.php?query=' + encodeURIComponent(query))
         .then(res => res.json())
         .then(data => {
           if (!checkSupportResultsList) return;
@@ -1029,7 +1029,7 @@
         }
       }
 
-      fetch('../backend/api/get_notifications.php?action=get' + queryStr)
+      fetch('backend/api/get_notifications.php?action=get' + queryStr)
         .then(res => res.json())
         .then(data => {
           if (data.status === 'success') {
@@ -1081,7 +1081,7 @@
                     const notifId = this.getAttribute('data-id');
                     const formData = new FormData();
                     formData.append('id', notifId);
-                    fetch('../backend/api/get_notifications.php?action=mark_read', { method: 'POST', body: formData })
+                    fetch('backend/api/get_notifications.php?action=mark_read', { method: 'POST', body: formData })
                       .then(() => fetchCustomerNotifs());
                   });
                 });
@@ -1114,7 +1114,7 @@
           } catch (_e) {}
         }
       }
-      fetch('../backend/api/get_notifications.php?action=mark_all_read' + queryStr, { method: 'POST' })
+      fetch('backend/api/get_notifications.php?action=mark_all_read' + queryStr, { method: 'POST' })
         .then(res => res.json())
         .then(() => fetchCustomerNotifs())
         .catch(_e => {});
@@ -1898,7 +1898,7 @@
         formData.append('title', title);
         formData.append('content', content);
 
-        const res = await fetch('../backend/api/submit_review.php', { method: 'POST', body: formData });
+        const res = await fetch('backend/api/submit_review.php', { method: 'POST', body: formData });
         const data = await res.json();
 
         if (data.status === 'success') {
@@ -1963,7 +1963,7 @@
       if (!confirm('🗑️ Bạn có chắc chắn muốn xóa nhận xét này không? Thao tác này không thể hoàn tác.')) return;
 
       try {
-        const res = await fetch('../backend/api/delete_review.php', {
+        const res = await fetch('backend/api/delete_review.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: reviewId, user: currentUser })
@@ -2004,7 +2004,7 @@
     async function loadTestimonialsFromApi() {
       if (!testiGrid) return;
       try {
-        const res = await fetch('../backend/api/testimonials.php');
+        const res = await fetch('backend/api/testimonials.php');
         const json = await res.json();
         if (json.status === 'success' && Array.isArray(json.data) && json.data.length > 0) {
           const currentUser = (window.VNPTAuth && typeof window.VNPTAuth.getCurrentUser === 'function' && window.VNPTAuth.getCurrentUser()) ||
@@ -2108,7 +2108,7 @@
 
     try {
       if (id) {
-        const res = await fetch('../backend/api/testimonials.php');
+        const res = await fetch('backend/api/testimonials.php');
         const json = await res.json();
         if (json.status === 'success' && Array.isArray(json.data)) {
           const found = json.data.find(item => String(item.id) === String(id));

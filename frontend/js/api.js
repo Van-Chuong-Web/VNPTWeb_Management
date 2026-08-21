@@ -24,6 +24,19 @@
     ? ''
     : `${window.location.protocol}//${window.location.hostname}:3000`;
 
+  window.getApiPath = function(endpoint) {
+    if (!endpoint) return '';
+    if (endpoint.startsWith('http://') || endpoint.startsWith('https://') || endpoint.startsWith('data:')) {
+      return endpoint;
+    }
+    let cleanEndpoint = endpoint.replace(/^(\.\.\/|\/)+/, '');
+    const pathname = window.location.pathname;
+    if (pathname.includes('/frontend/')) {
+      return '../' + cleanEndpoint;
+    }
+    return cleanEndpoint;
+  };
+
   // ---- "Ghi nhớ đăng nhập": token lưu ở localStorage (còn sau khi đóng trình
   // duyệt) khi được chọn, ngược lại lưu ở sessionStorage (mất khi đóng tab/trình
   // duyệt) để bảo mật hơn trên máy dùng chung. getToken() luôn kiểm tra cả hai.

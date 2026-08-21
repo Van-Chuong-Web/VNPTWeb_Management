@@ -9,7 +9,7 @@
     if (e) e.preventDefault();
     const user = window.VNPTAuth ? window.VNPTAuth.getCurrentUser() : null;
     const email = user ? (user.email || '') : '';
-    const targetUrl = email ? `../admin_panel/index.php?user_email=${encodeURIComponent(email)}` : '../admin_panel/index.php';
+    const targetUrl = email ? `admin_panel/index.php?user_email=${encodeURIComponent(email)}` : 'admin_panel/index.php';
     window.location.href = targetUrl;
   }
 

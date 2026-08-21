@@ -249,7 +249,7 @@
           formData.append('avatar', avatarInput.files[0]);
         }
 
-        const res = await fetch('../backend/api/update_profile.php', { method: 'POST', body: formData });
+        const res = await fetch('backend/api/update_profile.php', { method: 'POST', body: formData });
         const data = await res.json();
 
         const updatedAvatar = data.user && data.user.hinh_anh_url ? data.user.hinh_anh_url : (user.hinh_anh_url || user.avatar || '');
@@ -335,7 +335,7 @@
       const email = user.email || '';
       const phone = getPhone(user);
 
-      const res = await fetch(`../backend/api/my_orders.php?email=${encodeURIComponent(email)}&phone=${encodeURIComponent(phone)}`);
+      const res = await fetch(`backend/api/my_orders.php?email=${encodeURIComponent(email)}&phone=${encodeURIComponent(phone)}`);
       if (res.ok) {
         const data = await res.json();
         if (data.status === 'success' && data.orders) {
@@ -380,7 +380,7 @@
           if (!detailEl.dataset.loaded) {
             detailEl.innerHTML = '<p style="padding-top:.8rem;color:#64748B"><i class="fa-solid fa-spinner fa-spin me-1"></i> Đang tải chi tiết...</p>';
             try {
-              const resDet = await fetch(`../backend/api/my_orders.php?action=detail&code=${encodeURIComponent(code)}&email=${encodeURIComponent(email)}`);
+              const resDet = await fetch(`backend/api/my_orders.php?action=detail&code=${encodeURIComponent(code)}&email=${encodeURIComponent(email)}`);
               const dataDet = await resDet.json();
               if (dataDet.status === 'success' && dataDet.order) {
                 const order = dataDet.order;

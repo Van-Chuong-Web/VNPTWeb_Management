@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (window.lucide) lucide.createIcons();
 
             searchTimeout = setTimeout(() => {
-                fetch(`../backend/api/search.php?q=${encodeURIComponent(query)}`)
+                fetch(`backend/api/search.php?q=${encodeURIComponent(query)}`)
                     .then(response => response.json())
                     .then(res => {
                         if (res.status === 'success') renderSearchResults(res.data);

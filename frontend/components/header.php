@@ -90,7 +90,7 @@ function renderMenuHTML($menuTree, $parentId = 0)
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>VNPT – Dịch Vụ Số Toàn Diện</title>
-  <link rel="stylesheet" href="assets/style.css?v=<?php echo time(); ?>" />
+  <link rel="stylesheet" href="<?php echo (strpos($_SERVER['REQUEST_URI'] ?? '', '/frontend/') !== false) ? 'assets/style.css' : 'frontend/assets/style.css'; ?>?v=<?php echo time(); ?>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&display=swap"
     rel="stylesheet" />

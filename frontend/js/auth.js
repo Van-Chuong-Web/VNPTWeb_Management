@@ -654,7 +654,7 @@ window.closeAllAuthModals = function() {
     e.preventDefault();
     const u = getCurrentUser();
     const email = u ? (u.email || '') : '';
-    window.location.href = '../admin_panel/index.php' + (email ? '?user_email=' + encodeURIComponent(email) : '');
+    window.location.href = 'admin_panel/index.php' + (email ? '?user_email=' + encodeURIComponent(email) : '');
   });
 
   switchToReg?.addEventListener('click', (e) => {
@@ -696,7 +696,7 @@ window.closeAllAuthModals = function() {
   // API Đẩy thông tin sang Backend PHP MySQL (hoặc Node.js API)
   async function sendSocialAuthToBackend(payload, providerName) {
     try {
-      const phpEndpoint = '../backend/api/social_login.php';
+      const phpEndpoint = 'backend/api/social_login.php';
       const nodeEndpoint = (typeof window.VNPTApi !== 'undefined' && window.VNPTApi.baseUrl) 
                            ? `${window.VNPTApi.baseUrl}/auth/social`
                            : 'http://127.0.0.1:3000/api/auth/social';
@@ -989,7 +989,7 @@ window.closeAllAuthModals = function() {
     const latestUser = getCurrentUser();
     if (latestUser && latestUser.email) {
       try {
-        const res = await fetch('../backend/api/update_profile.php?action=get&email=' + encodeURIComponent(latestUser.email));
+        const res = await fetch('backend/api/update_profile.php?action=get&email=' + encodeURIComponent(latestUser.email));
         const data = await res.json();
         if (data.status === 'success' && data.user) {
           const merged = { ...latestUser, ...data.user };
@@ -1077,7 +1077,7 @@ window.closeAllAuthModals = function() {
       btn.innerHTML = '<span>Đang gửi mã...</span>';
 
       try {
-        const res = await fetch('../backend/api/forgot_password.php', {
+        const res = await fetch('backend/api/forgot_password.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'send_otp', email: email, type: 'frontend' })
@@ -1123,7 +1123,7 @@ window.closeAllAuthModals = function() {
       btn.innerHTML = '<span>Đang xác nhận...</span>';
 
       try {
-        const res = await fetch('../backend/api/forgot_password.php', {
+        const res = await fetch('backend/api/forgot_password.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'verify_otp', email: currentFgEmail, otp: otp })
@@ -1168,7 +1168,7 @@ window.closeAllAuthModals = function() {
       btn.innerHTML = '<span>Đang lưu mật khẩu...</span>';
 
       try {
-        const res = await fetch('../backend/api/forgot_password.php', {
+        const res = await fetch('backend/api/forgot_password.php', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

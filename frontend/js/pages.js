@@ -1074,7 +1074,7 @@
 
     // Thử gọi API backend kiểm tra cả bài viết & trang động từ MySQL
     try {
-      const response = await fetch(`../backend/api/pages.php?slug=${encodeURIComponent(cleanKey)}`);
+      const response = await fetch(`backend/api/pages.php?slug=${encodeURIComponent(cleanKey)}`);
       if (response.ok) {
         const res = await response.json();
         if (res.status === 'success') {
@@ -1357,7 +1357,7 @@
 
         try {
           const formData = new FormData(form);
-          const response = await fetch('../backend/api/consultation.php', {
+          const response = await fetch('backend/api/consultation.php', {
             method: 'POST',
             body: formData
           });
