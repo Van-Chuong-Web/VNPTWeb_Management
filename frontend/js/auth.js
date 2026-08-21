@@ -975,6 +975,18 @@ window.closeAllAuthModals = function() {
     if (sessionRestored) return;
     sessionRestored = true;
 
+    // Nếu KHÔNG tích "Ghi nhớ đăng nhập" (không có token lưu trong localStorage), tự động đăng xuất khi load lại trang
+    if (Api && typeof Api.remembered === 'function' && !Api.remembered()) {
+      if (Api && typeof Api.setToken === 'function') Api.setToken('');
+      localStorage.removeItem('vnpt_user');
+      localStorage.removeItem('vnpt_token');
+      sessionStorage.removeItem('vnpt_user');
+      sessionStorage.removeItem('vnpt_token');
+      setCurrentUser(null);
+      updateAuthUI();
+      return;
+    }
+
     const curUser = getCurrentUser();
 
     if (await backendReady() && Api.getToken()) {
