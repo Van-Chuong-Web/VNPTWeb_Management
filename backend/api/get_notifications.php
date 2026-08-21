@@ -1,6 +1,6 @@
 <?php
 /**
- * backend/api/get_notifications.php — API Thông báo phân quyền Khách hàng vs Nhân viên
+ * backend/api/get_notifications.php — API Thông báo phân quyền Khách hàng vs Nhân viên (Tối ưu 100%)
  */
 
 header('Content-Type: application/json; charset=utf-8');
@@ -16,12 +16,12 @@ try {
     $phone = trim($_GET['phone'] ?? $_POST['phone'] ?? '');
 
     $isStaff = false;
-    $taiKhoanId = $_SESSION['user']['id'] ?? null;
+    $taiKhoanId = $_SESSION['user']['id'] ?? $_SESSION['admin_user']['id'] ?? null;
     $khachHangId = $_SESSION['user']['khach_hang_id'] ?? null;
-    $nhanVienId = $_SESSION['user']['nhan_vien_id'] ?? null;
+    $nhanVienId = $_SESSION['user']['nhan_vien_id'] ?? $_SESSION['admin_user']['nhan_vien_id'] ?? null;
 
-    $loaiTaiKhoan = $_SESSION['user']['loai_tai_khoan'] ?? '';
-    $rawRole = $_SESSION['user']['role'] ?? $_SESSION['user']['ten_vai_tro'] ?? '';
+    $loaiTaiKhoan = $_SESSION['user']['loai_tai_khoan'] ?? $_SESSION['admin_user']['loai_tai_khoan'] ?? '';
+    $rawRole = $_SESSION['user']['role'] ?? $_SESSION['user']['ten_vai_tro'] ?? $_SESSION['admin_user']['ten_vai_tro'] ?? '';
 
     if ($loaiTaiKhoan === 'nhan_vien' || in_array($rawRole, ['admin', 'quan_tri_vien', 'bien_tap_vien', 'nhan_vien_ban_hang', 'quan_ly', 'editor', 'staff'])) {
         $isStaff = true;
@@ -55,6 +55,19 @@ try {
         if (!$nhanVienId && $taiKhoanId) {
             $stmtNv = $pdo->prepare("SELECT id FROM nhan_vien WHERE tai_khoan_id = ? LIMIT 1");
             $stmtNv->execute([$taiKhoanId]);
+            $foundNv = $stmtNv->fetch();
+            if ($foundNv) $nhanVienId = $foundNv['id'];
+        }
+        if (!$nhanVienId && $email) {
+            $stmtNv = $pdo->prepare("
+                SELECT nv.id 
+                  FROM nhan_vien nv 
+             LEFT JOIN tai_khoan tk ON tk.id = nv.tai_khoan_id 
+                 WHERE LOWER(tk.email) = LOWER(:email) OR LOWER(tk.email) = LOWER(:vnvd)
+                 LIMIT 1
+            ");
+            $vnvdEmail = str_replace('@vnpt.vn', '@vnvd.vn', $email);
+            $stmtNv->execute([':email' => $email, ':vnvd' => $vnvdEmail]);
             $foundNv = $stmtNv->fetch();
             if ($foundNv) $nhanVienId = $foundNv['id'];
         }
@@ -111,17 +124,17 @@ try {
     $notifs = [];
     try {
         if ($isStaff) {
-            // Lấy thông báo dành riêng cho Nhân viên (từ thong_bao_nhan_vien)
+            // Lấy thông báo dành riêng cho Nhân viên (từ thong_bao_nhan_vien, cột ngay_tao)
             if ($nhanVienId) {
-                $stmt = $pdo->prepare("SELECT id, tieu_de, noi_dung, 'he_thong' AS loai, da_doc, created_at FROM thong_bao_nhan_vien WHERE nhan_vien_id = ? OR nhan_vien_id IS NULL ORDER BY id DESC LIMIT 50");
+                $stmt = $pdo->prepare("SELECT id, tieu_de, noi_dung, 'he_thong' AS loai, da_doc, ngay_tao AS created_at FROM thong_bao_nhan_vien WHERE nhan_vien_id = ? OR nhan_vien_id IS NULL ORDER BY id DESC LIMIT 50");
                 $stmt->execute([$nhanVienId]);
                 $notifs = $stmt->fetchAll(PDO::FETCH_ASSOC);
             } else {
-                $stmt = $pdo->query("SELECT id, tieu_de, noi_dung, 'he_thong' AS loai, da_doc, created_at FROM thong_bao_nhan_vien WHERE nhan_vien_id IS NULL ORDER BY id DESC LIMIT 50");
+                $stmt = $pdo->query("SELECT id, tieu_de, noi_dung, 'he_thong' AS loai, da_doc, ngay_tao AS created_at FROM thong_bao_nhan_vien WHERE nhan_vien_id IS NULL ORDER BY id DESC LIMIT 50");
                 $notifs = $stmt->fetchAll(PDO::FETCH_ASSOC);
             }
         } else {
-            // Lấy thông báo dành riêng cho Khách hàng (từ thong_bao)
+            // Lấy thông báo dành riêng cho Khách hàng (từ thong_bao, cột created_at)
             if ($khachHangId) {
                 $stmt = $pdo->prepare("SELECT id, tieu_de, noi_dung, loai, da_doc, created_at FROM thong_bao WHERE khach_hang_id = ? OR khach_hang_id IS NULL ORDER BY id DESC LIMIT 50");
                 $stmt->execute([$khachHangId]);
