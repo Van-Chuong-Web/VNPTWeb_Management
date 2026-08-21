@@ -250,7 +250,8 @@
           formData.append('avatar', avatarInput.files[0]);
         }
 
-        const res = await fetch('backend/api/update_profile.php', { method: 'POST', body: formData });
+        const updateUrl = (typeof window.getApiPath === 'function') ? window.getApiPath('backend/api/update_profile.php') : 'backend/api/update_profile.php';
+        const res = await fetch(updateUrl, { method: 'POST', body: formData });
         const data = await res.json();
 
         const updatedAvatar = data.user && data.user.hinh_anh_url ? data.user.hinh_anh_url : (user.hinh_anh_url || user.avatar || '');

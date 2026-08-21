@@ -1,6 +1,6 @@
 <?php
 /**
- * backend/api/update_profile.php — Cập nhật thông tin tài khoản & ảnh đại diện
+ * backend/api/update_profile.php — Cập nhật thông tin tài khoản & tải ảnh đại diện (Tối ưu 100%)
  */
 
 header('Content-Type: application/json; charset=utf-8');
@@ -11,10 +11,13 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/../../admin_panel/db.php';
 
 try {
-    $email = trim($_POST['email'] ?? $_GET['email'] ?? $_SESSION['user']['email'] ?? '');
-    $firstName = trim($_POST['firstName'] ?? '');
-    $lastName  = trim($_POST['lastName'] ?? '');
-    $phone     = trim($_POST['phone'] ?? '');
+    $rawInput = json_decode(file_get_contents('php://input'), true);
+    $postData = !empty($rawInput) ? array_merge($_POST, $rawInput) : $_POST;
+
+    $email = strtolower(trim($postData['email'] ?? $_GET['email'] ?? $_SESSION['user']['email'] ?? ''));
+    $firstName = trim($postData['firstName'] ?? '');
+    $lastName  = trim($postData['lastName'] ?? '');
+    $phone     = trim($postData['phone'] ?? '');
 
     $hoTen = trim($firstName . ' ' . $lastName);
 
@@ -26,7 +29,8 @@ try {
 
     $action = $_GET['action'] ?? 'update';
 
-    // 1. Lấy thông tin tài khoản
+    // 1. Tìm thông tin tài khoản trong MySQL (cả tai_khoan, khach_hang, nhan_vien)
+    $vnvdEmail = str_replace('@vnpt.vn', '@vnvd.vn', $email);
     $stmt = $pdo->prepare("
         SELECT tk.id AS tk_id, tk.email, tk.hinh_anh_url, tk.loai_tai_khoan,
                kh.id AS kh_id, kh.ho_ten AS kh_ho_ten, kh.so_dien_thoai AS kh_sdt,
@@ -34,10 +38,10 @@ try {
         FROM tai_khoan tk
         LEFT JOIN khach_hang kh ON kh.tai_khoan_id = tk.id
         LEFT JOIN nhan_vien nv ON nv.tai_khoan_id = tk.id
-        WHERE tk.email = :email
+        WHERE LOWER(tk.email) = :email OR LOWER(tk.email) = :vnvd_email
         LIMIT 1
     ");
-    $stmt->execute([':email' => $email]);
+    $stmt->execute([':email' => $email, ':vnvd_email' => $vnvdEmail]);
     $userRow = $stmt->fetch();
 
     if ($action === 'get') {
@@ -60,9 +64,10 @@ try {
         }
     }
 
-    // 2. Xử lý upload ảnh đại diện (nếu có tệp gửi lên)
-    $hinhAnhUrl = trim($_POST['hinh_anh_url'] ?? $_POST['avatar_url'] ?? $userRow['hinh_anh_url'] ?? '');
+    // 2. Xử lý ảnh đại diện (Tệp upload hoặc Chuỗi Base64 Data URL)
+    $hinhAnhUrl = trim($postData['hinh_anh_url'] ?? $postData['avatar_url'] ?? $postData['avatar'] ?? ($userRow['hinh_anh_url'] ?? ''));
 
+    // a) Xử lý tệp tin upload trực tiếp từ form
     if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
         $file = $_FILES['avatar'];
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
@@ -78,9 +83,30 @@ try {
                 $hinhAnhUrl = 'uploads/avatars/' . $filename;
             }
         }
+    } 
+    // b) Xử lý nếu gửi ảnh dưới dạng Base64 (data:image/...)
+    elseif (strpos($hinhAnhUrl, 'data:image/') === 0) {
+        try {
+            list($type, $data) = explode(';', $hinhAnhUrl);
+            list(, $data)      = explode(',', $data);
+            $imgData = base64_decode($data);
+            if ($imgData !== false) {
+                $ext = 'png';
+                if (strpos($type, 'jpeg') !== false || strpos($type, 'jpg') !== false) $ext = 'jpg';
+                elseif (strpos($type, 'webp') !== false) $ext = 'webp';
+
+                $uploadDir = __DIR__ . '/../../uploads/avatars/';
+                if (!file_exists($uploadDir)) {
+                    mkdir($uploadDir, 0777, true);
+                }
+                $filename = 'avatar_' . time() . '_' . rand(1000, 9999) . '.' . $ext;
+                file_put_contents($uploadDir . $filename, $imgData);
+                $hinhAnhUrl = 'uploads/avatars/' . $filename;
+            }
+        } catch (Exception $_e) {}
     }
 
-    // 3. Cập nhật thông tin trong CSDL
+    // 3. Cập nhật vào CSDL MySQL
     if ($userRow) {
         $tkId = $userRow['tk_id'];
 
@@ -90,7 +116,7 @@ try {
             $upTk->execute([':url' => $hinhAnhUrl, ':id' => $tkId]);
         }
 
-        // Cập nhật họ tên và SĐT tùy theo loại tài khoản (khach_hang hoặc nhan_vien)
+        // Cập nhật họ tên và SĐT trong khach_hang hoặc nhan_vien
         if (!empty($hoTen)) {
             if (!empty($userRow['kh_id'])) {
                 $upKh = $pdo->prepare("UPDATE khach_hang SET ho_ten = :name, so_dien_thoai = :phone WHERE id = :id");
@@ -111,12 +137,14 @@ try {
             $_SESSION['user']['ho_ten'] = $hoTen;
             $_SESSION['user']['firstName'] = $firstName;
             $_SESSION['user']['lastName'] = $lastName;
+            $_SESSION['user']['phone'] = $phone;
+            $_SESSION['user']['so_dien_thoai'] = $phone;
         }
     }
 
     echo json_encode([
         'status'  => 'success',
-        'message' => 'Cập nhật hồ sơ cá nhân thành công!',
+        'message' => 'Cập nhật thông tin cá nhân & ảnh đại diện thành công!',
         'user'    => [
             'email'        => $email,
             'firstName'    => $firstName,
