@@ -70,6 +70,14 @@ try {
     // a) Xử lý tệp tin upload trực tiếp từ form
     if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
         $file = $_FILES['avatar'];
+        if ($file['size'] > 5 * 1024 * 1024) {
+            http_response_code(400);
+            echo json_encode([
+                'status'  => 'error',
+                'message' => 'Không được tải file ảnh quá dung lượng cho phép! (Tối đa 5MB)'
+            ], JSON_UNESCAPED_UNICODE);
+            exit();
+        }
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
         if (in_array($ext, $allowed)) {

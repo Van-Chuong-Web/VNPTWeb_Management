@@ -222,6 +222,15 @@
 
     avatarInput?.addEventListener('change', function() {
       if (this.files && this.files[0]) {
+        const file = this.files[0];
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (file.size > maxSize) {
+          const errMsg = 'Không được tải file ảnh quá dung lượng cho phép! (Tối đa 5MB)';
+          showAlert(document.getElementById('acctProfileAlert'), 'error', errMsg);
+          if (typeof showToast === 'function') showToast('⚠️ ' + errMsg, true);
+          this.value = '';
+          return;
+        }
         const reader = new FileReader();
         reader.onload = function(e) {
           if (avatarPreview) {
@@ -232,7 +241,7 @@
             avatarInitials.style.display = 'none';
           }
         };
-        reader.readAsDataURL(this.files[0]);
+        reader.readAsDataURL(file);
       }
     });
 
@@ -247,6 +256,16 @@
       if (!firstName) {
         showAlert(alertBox, 'error', 'Vui lòng nhập Họ.');
         return;
+      }
+
+      if (avatarInput && avatarInput.files && avatarInput.files[0]) {
+        const file = avatarInput.files[0];
+        if (file.size > 5 * 1024 * 1024) {
+          const errMsg = 'Không được tải file ảnh quá dung lượng cho phép! (Tối đa 5MB)';
+          showAlert(alertBox, 'error', errMsg);
+          if (typeof showToast === 'function') showToast('⚠️ ' + errMsg, true);
+          return;
+        }
       }
 
       const submitBtn = document.getElementById('acctProfileSubmit');
@@ -265,6 +284,11 @@
         const updateUrl = (typeof window.getApiPath === 'function') ? window.getApiPath('backend/api/update_profile.php') : 'backend/api/update_profile.php';
         const res = await fetch(updateUrl, { method: 'POST', body: formData });
         const data = await res.json();
+
+        if (data.status === 'error') {
+          showAlert(alertBox, 'error', data.message || 'Không được tải file ảnh quá dung lượng cho phép! (Tối đa 5MB)');
+          return;
+        }
 
         const updatedAvatar = data.user && data.user.hinh_anh_url ? data.user.hinh_anh_url : (user.hinh_anh_url || user.avatar || '');
 
@@ -316,7 +340,10 @@
         renderProfile(updatedUser, msg);
 
       } catch (err) {
-        showAlert(alertBox, 'error', err.message || 'Không thể cập nhật. Vui lòng thử lại.');
+        console.error('Lỗi cập nhật hồ sơ:', err);
+        const errMsg = (err && err.message && !err.message.includes('fetch')) ? err.message : 'Không được tải file ảnh quá dung lượng cho phép! (Tối đa 5MB)';
+        showAlert(alertBox, 'error', errMsg);
+        if (typeof showToast === 'function') showToast('⚠️ ' + errMsg, true);
       } finally {
         if (submitBtn) submitBtn.disabled = false;
       }
