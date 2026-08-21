@@ -143,7 +143,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 logActivity($pdo, "Đã xóa tài khoản khách hàng (ID: $id)");
                 $msg = '🗑️ Đã xóa khách hàng thành công.';
             } catch (PDOException $e) {
-                $msg = 'Lỗi khi xóa: ' . $e->getMessage();
+                if ($e->getCode() == '23000' || str_contains($e->getMessage(), '1451') || str_contains($e->getMessage(), 'foreign key')) {
+                    $msg = '⚠️ Không thể xóa khách hàng này vì khách hàng đã có đơn hàng trong hệ thống! (Bạn có thể chọn Khóa tài khoản thay vì Xóa).';
+                } else {
+                    $msg = 'Lỗi khi xóa: ' . $e->getMessage();
+                }
                 $msgType = 'danger';
             }
         }

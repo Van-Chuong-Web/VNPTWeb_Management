@@ -43,7 +43,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $msg = "✅ Đã xóa sản phẩm <strong>" . htmlspecialchars($prod['ten_san_pham']) . "</strong> thành công!";
             }
         } catch (PDOException $e) {
-            $msg = "⚠️ Lỗi khi xóa sản phẩm: " . $e->getMessage();
+            if ($e->getCode() == '23000' || str_contains($e->getMessage(), '1451') || str_contains($e->getMessage(), 'foreign key')) {
+                $msg = '⚠️ Không thể xóa sản phẩm này vì sản phẩm đã phát sinh đơn hàng trong hệ thống!';
+            } else {
+                $msg = "⚠️ Lỗi khi xóa sản phẩm: " . $e->getMessage();
+            }
             $msgType = "danger";
         }
     } elseif ($action === 'toggle_status' && $id > 0) {
