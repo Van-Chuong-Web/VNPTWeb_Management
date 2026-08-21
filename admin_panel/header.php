@@ -350,7 +350,7 @@ $base = '';
            class="sidebar-link <?= $activeMenu === 'profile' ? 'active' : '' ?>">
             <i class="fa-solid fa-id-badge"></i> Hồ sơ cá nhân
         </a>
-        <a href="../frontend/index.php" target="_blank" class="sidebar-link">
+        <a href="../index.php" target="_blank" class="sidebar-link">
             <i class="fa-solid fa-globe"></i> Xem website
             <i class="fa-solid fa-arrow-up-right-from-square ms-auto" style="font-size:10px;opacity:.5"></i>
         </a>

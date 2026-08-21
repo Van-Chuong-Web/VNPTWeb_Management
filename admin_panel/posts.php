@@ -198,7 +198,7 @@ require_once __DIR__ . '/header.php';
                         </td>
                         <td class="text-end">
                             <?php if (!empty($p['slug'])): ?>
-                                <a href="../frontend/index.php#page=<?= urlencode($p['slug']) ?>" target="_blank" class="btn btn-outline-info btn-action" title="Xem bài viết trên website">
+                                <a href="../index.php#page=<?= urlencode($p['slug']) ?>" target="_blank" class="btn btn-outline-info btn-action" title="Xem bài viết trên website">
                                     <i class="fa-solid fa-eye"></i>
                                 </a>
                             <?php endif; ?>

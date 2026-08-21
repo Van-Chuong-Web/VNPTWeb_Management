@@ -27,7 +27,7 @@ session_destroy();
         localStorage.removeItem('vnpt_token');
         localStorage.setItem('vnpt_force_logout', '1');
         sessionStorage.clear();
-        window.location.href = '../frontend/index.php?logged_out=1';
+        window.location.href = '../index.php?logged_out=1';
     </script>
 </head>
 <body>
