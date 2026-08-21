@@ -130,17 +130,24 @@ try {
             $upTk->execute([':url' => $hinhAnhUrl, ':id' => $tkId]);
         }
 
-        // Cập nhật họ tên và SĐT trong khach_hang hoặc nhan_vien
-        if (!empty($userRow['kh_id'])) {
-            $upKh = $pdo->prepare("UPDATE khach_hang SET ho_ten = :name, so_dien_thoai = :phone WHERE id = :id");
-            $upKh->execute([':name' => $hoTen, ':phone' => $phone, ':id' => $userRow['kh_id']]);
-        } elseif (!empty($userRow['nv_id'])) {
-            $upNv = $pdo->prepare("UPDATE nhan_vien SET ho_ten = :name WHERE id = :id");
-            $upNv->execute([':name' => $hoTen, ':id' => $userRow['nv_id']]);
+        // Cập nhật họ tên và SĐT trong khach_hang hoặc nhan_vien (Phân biệt rõ ràng Tài khoản Nhân viên vs Khách hàng)
+        $loaiTk = $userRow['loai_tai_khoan'] ?? '';
+        if ($loaiTk === 'nhan_vien' || !empty($userRow['nv_id'])) {
+            if (!empty($userRow['nv_id'])) {
+                $upNv = $pdo->prepare("UPDATE nhan_vien SET ho_ten = :name WHERE id = :id");
+                $upNv->execute([':name' => $hoTen, ':id' => $userRow['nv_id']]);
+            } else {
+                $insNv = $pdo->prepare("INSERT INTO nhan_vien (tai_khoan_id, ho_ten) VALUES (:tkId, :name)");
+                $insNv->execute([':tkId' => $tkId, ':name' => $hoTen]);
+            }
         } else {
-            // Tự động tạo bản ghi khach_hang mới nếu chưa có
-            $insKh = $pdo->prepare("INSERT INTO khach_hang (tai_khoan_id, ho_ten, so_dien_thoai) VALUES (:tkId, :name, :phone)");
-            $insKh->execute([':tkId' => $tkId, ':name' => $hoTen, ':phone' => $phone]);
+            if (!empty($userRow['kh_id'])) {
+                $upKh = $pdo->prepare("UPDATE khach_hang SET ho_ten = :name, so_dien_thoai = :phone WHERE id = :id");
+                $upKh->execute([':name' => $hoTen, ':phone' => $phone ?: null, ':id' => $userRow['kh_id']]);
+            } else {
+                $insKh = $pdo->prepare("INSERT INTO khach_hang (tai_khoan_id, ho_ten, so_dien_thoai) VALUES (:tkId, :name, :phone)");
+                $insKh->execute([':tkId' => $tkId, ':name' => $hoTen, ':phone' => $phone ?: null]);
+            }
         }
     }
 

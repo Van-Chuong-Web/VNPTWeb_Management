@@ -138,6 +138,7 @@
     const fn = getFirstName(user);
     const ln = getLastName(user);
     const ph = getPhone(user);
+    const isStaffAcc = isStaffUser() || (user && (user.loai_tai_khoan === 'nhan_vien' || ['admin', 'quan_tri_vien', 'bien_tap_vien', 'nhan_vien_ban_hang', 'quan_ly', 'editor', 'staff'].includes(user.role || user.ten_vai_tro)));
     const avatarPath = user.hinh_anh_url || user.avatar || '';
     const avatarSrc = avatarPath ? (avatarPath.startsWith('http') || avatarPath.startsWith('data:') ? avatarPath : avatarPath.replace(/^(\.\.\/|\/)+/, '')) : '';
 
@@ -188,6 +189,7 @@
                     <input type="email" value="${escapeAttr(user.email || '')}" disabled style="opacity:.75; background:#F8FAFC;">
                   </div>
                 </div>
+                ${!isStaffAcc ? `
                 <div class="auth-field full">
                   <label>Số điện thoại liên hệ</label>
                   <div class="auth-input-wrap">
@@ -195,6 +197,7 @@
                     <input type="tel" id="acctPhone" value="${escapeAttr(ph)}" placeholder="09xxxxxxxx">
                   </div>
                 </div>
+                ` : ''}
               </div>
               <div style="margin-top:1.5rem">
                 <button type="submit" id="acctProfileSubmit" class="acct-btn acct-btn-primary">
