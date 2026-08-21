@@ -1,8 +1,9 @@
 <?php
 /**
- * backend/api/chat.php — API Chatbot VNPT Smart AI Tích hợp Google Gemini AI Trực tiếp (Mô hình Gemini 3.6 Flash & 2.5 Flash)
+ * backend/api/chat.php — API Chatbot VNPT Smart AI Tích hợp Google Gemini AI Trực tiếp (Bảo đảm không Timeout)
  */
 
+@set_time_limit(60);
 header('Content-Type: application/json; charset=utf-8');
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -24,56 +25,39 @@ $geminiApiKey = getenv('GEMINI_API_KEY') ?: ($_ENV['GEMINI_API_KEY'] ?? base64_d
 function callGeminiAI($userMessage, $apiKey) {
     if (empty($apiKey)) return null;
 
-    $systemInstruction = "Bạn là VNPT Smart AI — Trợ lý trí tuệ nhân tạo chuyên nghiệp của Tập đoàn VNPT Digital (Việt Nam).\n" .
-        "Bạn tư vấn nhiệt tình, thân thiện, súc tích, chuyên nghiệp và sử dụng các biểu tượng icon sinh động.\n" .
-        "Thông tin cốt lõi về dịch vụ VNPT:\n" .
-        "- Cáp quang FiberVNN & Internet 5G: Gói SPORT LITE 30.000đ/tháng, Fiber Doanh nghiệp 350.000đ/tháng.\n" .
-        "- VNPT Cloud & Server: Chuẩn Uptime Tier III, Gói Doanh Nghiệp 2.900.000đ/tháng, Gói Cao Cấp 7.500.000đ/tháng.\n" .
-        "- Chữ ký số SmartCA & Hóa đơn điện tử VNPT Invoice: Ký từ xa trên điện thoại, giá từ 1.200.000đ/năm.\n" .
-        "- VNPT AI OCR & Chatbot: Bóc tách CCCD/Hóa đơn chính xác 99.8%, Gói Enterprise 1.500.000đ/tháng.\n" .
-        "- Tổng đài hỗ trợ CSKH 24/7: 1800 1260 | Email: contact@vnpt.vn | Trụ sở: VNPT Tower, 57 Huỳnh Thúc Kháng, Hà Nội.";
+    $prompt = "Bạn là VNPT Smart AI — Trợ lý trí tuệ nhân tạo chuyên nghiệp của Tập đoàn VNPT Digital (Việt Nam).\n" .
+        "Bạn trả lời nhiệt tình, thân thiện, ngắn gọn và sử dụng biểu tượng icon sinh động phù hợp.\n" .
+        "Người dùng hỏi: " . $userMessage;
 
     $payload = [
-        'system_instruction' => [
-            'parts' => [
-                ['text' => $systemInstruction]
-            ]
-        ],
         'contents' => [
             [
-                'role' => 'user',
                 'parts' => [
-                    ['text' => $userMessage]
+                    ['text' => $prompt]
                 ]
             ]
         ]
     ];
 
-    // Các mô hình Gemini chuẩn mới nhất của Google
-    $models = [
-        'gemini-3.6-flash',
-        'gemini-2.5-flash'
-    ];
+    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=" . urlencode($apiKey);
 
-    foreach ($models as $m) {
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/" . $m . ":generateContent?key=" . urlencode($apiKey);
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload, JSON_UNESCAPED_UNICODE));
-        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload, JSON_UNESCAPED_UNICODE));
+    curl_setopt($ch, CURLOPT_TIMEOUT, 45);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
-        $res = curl_exec($ch);
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+    $res = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
 
-        if ($res && ($code === 200 || $code === 201)) {
-            $json = json_decode($res, true);
-            if (!empty($json['candidates'][0]['content']['parts'][0]['text'])) {
-                return trim($json['candidates'][0]['content']['parts'][0]['text']);
-            }
+    if ($res && ($code === 200 || $code === 201)) {
+        $json = json_decode($res, true);
+        if (!empty($json['candidates'][0]['content']['parts'][0]['text'])) {
+            return trim($json['candidates'][0]['content']['parts'][0]['text']);
         }
     }
 
