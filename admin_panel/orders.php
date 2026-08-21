@@ -117,10 +117,10 @@ $filterStatus = $_GET['trang_thai']      ?? '';
 $tuNgay       = $_GET['tu_ngay']         ?? '';
 $denNgay      = $_GET['den_ngay']        ?? '';
 
-$sql = "SELECT dh.*, kh.ho_ten AS khach_hang_ten, tk.email AS khach_hang_email
+$sql = "SELECT dh.*, COALESCE(kh.ho_ten, 'Khách hàng VNPT') AS khach_hang_ten, COALESCE(tk.email, 'Chưa có email') AS khach_hang_email
           FROM don_hang dh
-          JOIN khach_hang kh ON kh.id = dh.khach_hang_id
-          JOIN tai_khoan tk ON tk.id = kh.tai_khoan_id
+          LEFT JOIN khach_hang kh ON kh.id = dh.khach_hang_id
+          LEFT JOIN tai_khoan tk ON tk.id = kh.tai_khoan_id
          WHERE 1=1";
 $params = [];
 

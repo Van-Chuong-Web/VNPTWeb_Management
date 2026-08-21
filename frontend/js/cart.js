@@ -654,11 +654,13 @@ document.addEventListener('DOMContentLoaded', function() {
         let returnedOrderCode = orderCode;
 
         try {
-            const ordersUrl = (typeof window.getApiPath === 'function') ? window.getApiPath('backend/api/orders.php') : 'backend/api/orders.php';
+            const baseUrl = (typeof window.getApiPath === 'function') ? window.getApiPath('backend/api/orders.php') : 'backend/api/orders.php';
+            const ordersUrl = baseUrl + (baseUrl.includes('?') ? '&' : '?') + 'action=create';
             const res = await fetch(ordersUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    action: 'create',
                     email: userEmail,
                     ma_don_hang: orderCode,
                     items: itemsToPay,
