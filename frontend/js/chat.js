@@ -159,22 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function fetchAIReply(userText) {
-    // 1) Thử fetch tới Node.js API (Cổng 3000)
-    try {
-      const res = await fetch(API_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userText, history }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok && data?.reply) {
-        return data.reply;
-      }
-    } catch (_err) {
-      // Ignore node backend offline
-    }
-
-    // 2) Thử fetch tới PHP API (Cổng 8080 / Apache)
+    // 1) Ưu tiên gọi trực tiếp PHP Backend API kết nối Google Gemini AI
     try {
       const phpRes = await fetch('backend/api/chat.php', {
         method: 'POST',
@@ -187,6 +172,21 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (_err) {
       // Ignore php backend error
+    }
+
+    // 2) Thử fetch tới Node.js API (Cổng 3000)
+    try {
+      const res = await fetch(API_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userText, history }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data?.reply) {
+        return data.reply;
+      }
+    } catch (_err) {
+      // Ignore node backend offline
     }
 
     // 3) Fallback trực tiếp sang Smart AI Engine Javascript tại Frontend
