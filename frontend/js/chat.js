@@ -159,9 +159,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function fetchAIReply(userText) {
-    // 1) Ưu tiên gọi trực tiếp PHP Backend API kết nối Google Gemini AI
+    // 1) Ưu tiên gọi trực tiếp PHP Backend API kết nối Google Gemini AI (Dùng path chuẩn getApiPath)
     try {
-      const phpRes = await fetch('backend/api/chat.php', {
+      const chatApiUrl = (typeof window.getApiPath === 'function')
+        ? window.getApiPath('backend/api/chat.php')
+        : 'backend/api/chat.php';
+      const phpRes = await fetch(chatApiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userText, history }),
