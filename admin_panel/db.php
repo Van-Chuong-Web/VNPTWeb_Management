@@ -1,6 +1,6 @@
 <?php
 /**
- * db.php — Kết nối PDO đến CSDL MySQL website_vnpt (MERGED)
+ * db.php — Smart Multi-Candidate PDO Connection to MySQL (website_vnpt)
  */
 
 // Đọc file .env nếu có
@@ -19,48 +19,76 @@ if (file_exists($envFile)) {
     }
 }
 
-$envHost = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: 'localhost';
-$envPort = $_ENV['DB_PORT'] ?? getenv('DB_PORT') ?: '3306';
-$envName = $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: 'website_vnpt';
-$envUser = $_ENV['DB_USER'] ?? getenv('DB_USER') ?: 'root';
-$envPass = $_ENV['DB_PASSWORD'] ?? getenv('DB_PASSWORD') ?: ($_ENV['DB_PASS'] ?? getenv('DB_PASS') ?: '');
+$aivenPass = base64_decode('QVZOU19oc3JpWm9vX212SWp0Q3Jib2FS');
 
-if (!defined('DB_HOST')) define('DB_HOST',    $envHost);
-if (!defined('DB_PORT')) define('DB_PORT',    $envPort);
-if (!defined('DB_NAME')) define('DB_NAME',    $envName);
-if (!defined('DB_USER')) define('DB_USER',    $envUser);
-if (!defined('DB_PASS')) define('DB_PASS',    $envPass);
-if (!defined('DB_CHARSET')) define('DB_CHARSET', 'utf8mb4');
-
-// ── Tạo kết nối PDO ───────────────────────────────────────────────────────
-$dsn = sprintf(
-    'mysql:host=%s;port=%s;dbname=%s;charset=%s',
-    DB_HOST, DB_PORT, DB_NAME, DB_CHARSET
-);
-
-$options = [
-    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    PDO::ATTR_EMULATE_PREPARES   => false,
+$candidates = [
+    [
+        'host' => $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: 'localhost',
+        'port' => $_ENV['DB_PORT'] ?? getenv('DB_PORT') ?: '3306',
+        'name' => $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: 'website_vnpt',
+        'user' => $_ENV['DB_USER'] ?? getenv('DB_USER') ?: 'root',
+        'pass' => $_ENV['DB_PASSWORD'] ?? getenv('DB_PASSWORD') ?: ($_ENV['DB_PASS'] ?? getenv('DB_PASS') ?: '')
+    ],
+    [
+        'host' => 'localhost',
+        'port' => '3306',
+        'name' => 'website_vnpt',
+        'user' => 'vnpt_user',
+        'pass' => 'MatKhauBaoMat123@#$'
+    ],
+    [
+        'host' => '127.0.0.1',
+        'port' => '3306',
+        'name' => 'website_vnpt',
+        'user' => 'root',
+        'pass' => ''
+    ],
+    [
+        'host' => '127.0.0.1',
+        'port' => '3306',
+        'name' => 'website_vnpt',
+        'user' => 'vnpt_user',
+        'pass' => 'MatKhauBaoMat123@#$'
+    ],
+    [
+        'host' => 'db-web-nguyenhoanggiakhang-dabd.a.aivencloud.com',
+        'port' => '11935',
+        'name' => 'defaultdb',
+        'user' => 'avnadmin',
+        'pass' => $aivenPass
+    ]
 ];
 
-try {
-    $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
-} catch (PDOException $e) {
-    // Thử fallback sang vnpt_user nếu root lỗi
+$pdo = null;
+$lastError = null;
+
+foreach ($candidates as $c) {
     try {
-        $pdo = new PDO(
-            sprintf('mysql:host=%s;port=%s;dbname=%s;charset=%s', DB_HOST, DB_PORT, DB_NAME, DB_CHARSET),
-            'vnpt_user',
-            'MatKhauBaoMat123@#$',
-            $options
-        );
-    } catch (PDOException $e2) {
-        http_response_code(500);
-        die('<div style="font-family:sans-serif;padding:2rem;color:#dc3545;">
-            <h3>⚠️ Không thể kết nối cơ sở dữ liệu website_vnpt</h3>
-            <p>Vui lòng kiểm tra MySQL server và database website_vnpt trên máy chủ.</p>
-            <details><summary>Chi tiết lỗi (debug)</summary><pre>' . htmlspecialchars($e2->getMessage()) . '</pre></details>
-        </div>');
+        $dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $c['host'], $c['port'], $c['name']);
+        $options = [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES   => false,
+            PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false
+        ];
+        $pdo = new PDO($dsn, $c['user'], $c['pass'], $options);
+        if (!defined('DB_HOST')) define('DB_HOST', $c['host']);
+        if (!defined('DB_PORT')) define('DB_PORT', $c['port']);
+        if (!defined('DB_NAME')) define('DB_NAME', $c['name']);
+        if (!defined('DB_USER')) define('DB_USER', $c['user']);
+        if (!defined('DB_PASS')) define('DB_PASS', $c['pass']);
+        if (!defined('DB_CHARSET')) define('DB_CHARSET', 'utf8mb4');
+        break;
+    } catch (PDOException $e) {
+        $lastError = $e->getMessage();
     }
+}
+
+if (!$pdo) {
+    http_response_code(500);
+    die('<div style="font-family:sans-serif;padding:2rem;color:#dc3545;">
+        <h3>⚠️ Không thể kết nối cơ sở dữ liệu</h3>
+        <p>Không thể kết nối đến MySQL server trên localhost hoặc cloud.</p>
+        <details><summary>Chi tiết lỗi (debug)</summary><pre>' . htmlspecialchars($lastError) . '</pre></details>
+    </div>');
 }

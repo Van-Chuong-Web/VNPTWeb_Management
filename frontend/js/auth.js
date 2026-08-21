@@ -438,9 +438,42 @@ window.closeAllAuthModals = function() {
       if (loginError) { loginError.textContent = msg; loginError.style.display = 'block'; }
     };
 
+    const remember = !!document.getElementById('rememberMe')?.checked;
+
+    try {
+      // 1) Đăng nhập trực tiếp tới CSDL MySQL qua PHP API
+      const loginUrl = (typeof window.getApiPath === 'function') ? window.getApiPath('backend/api/login.php') : 'backend/api/login.php';
+      const res = await fetch(loginUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+
+      if (res.ok && data.status === 'success' && data.user) {
+        Api.setToken(data.token, remember);
+        setCurrentUser(data.user, remember);
+        finish();
+        updateAuthUI();
+        closeAllModals();
+        loginForm.reset();
+        showToast(`Chào mừng trở lại, ${data.user.firstName || data.user.ho_ten || data.user.email}! 👋`);
+        if (window.VNPTCart && typeof window.VNPTCart.fetchCart === 'function') {
+          window.VNPTCart.fetchCart();
+        }
+        return;
+      }
+
+      if (data && data.error) {
+        failLogin(data.error);
+        return;
+      }
+    } catch (err) {
+      console.warn('PHP Login API fallback to Node/offline:', err);
+    }
+
+    // 2) Fallback Node API
     if (await backendReady()) {
-      // ---- ONLINE: gọi API ----
-      const remember = !!document.getElementById('rememberMe')?.checked;
       try {
         const { token, user } = await Api.login(email, password);
         Api.setToken(token, remember);
@@ -453,14 +486,14 @@ window.closeAllAuthModals = function() {
         if (window.VNPTCart && typeof window.VNPTCart.fetchCart === 'function') {
           window.VNPTCart.fetchCart();
         }
+        return;
       } catch (err) {
         failLogin(err.message || 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.');
+        return;
       }
-      return;
     }
 
-    // ---- OFFLINE: localStorage ----
-    const remember = !!document.getElementById('rememberMe')?.checked;
+    // 3) Fallback offline
     setTimeout(() => {
       const users = getUsers();
       const user  = users.find(u => u.email === email && u.password === password);
@@ -475,7 +508,7 @@ window.closeAllAuthModals = function() {
       closeAllModals();
       loginForm.reset();
       showToast(`Chào mừng trở lại, ${user.firstName || user.email}! 👋`);
-    }, 700);
+    }, 500);
   });
 
   /* ---- Register form ---- */
